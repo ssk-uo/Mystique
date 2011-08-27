@@ -195,7 +195,7 @@ namespace Inscribe.ViewModels.Dialogs.SettingSub
 
         private void DeleteConfirm(ConfirmationMessage parameter)
         {
-            if (parameter.Response.GetValueOrDefault())
+            if (parameter.Response)
             {
                 Delete();
             }
