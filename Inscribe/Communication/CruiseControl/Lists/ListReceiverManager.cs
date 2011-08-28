@@ -77,7 +77,7 @@ namespace Inscribe.Communication.CruiseControl.Lists
 
         private static string NormalizeListName(string listName)
         {
-            return listName.ToLower().Replace("_", "-");
+            return listName.ToLower().Replace("_", "-").Replace(" ", "_");
         }
 
         private static string BuildListName(string user, string list)

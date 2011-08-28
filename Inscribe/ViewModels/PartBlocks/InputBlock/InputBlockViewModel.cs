@@ -520,7 +520,8 @@ namespace Inscribe.ViewModels.PartBlocks.InputBlock
             }
             else
             {
-                this.InputUserSelectorViewModel.LinkElements = accounts;
+                if (Setting.Instance.InputExperienceProperty.IsEnabledTemporarilyUserSelection)
+                    this.InputUserSelectorViewModel.LinkElements = accounts;
                 UpdateAccountImages();
                 UpdateCommand.RaiseCanExecuteChanged();
             }
