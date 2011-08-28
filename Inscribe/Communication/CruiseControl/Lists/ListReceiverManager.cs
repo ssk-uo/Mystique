@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Inscribe.Data;
 using Inscribe.Model;
 using Inscribe.Storage;
-using System.Threading.Tasks;
 
 namespace Inscribe.Communication.CruiseControl.Lists
 {
