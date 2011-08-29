@@ -3,6 +3,7 @@ using Inscribe.Configuration;
 using Inscribe.Subsystems;
 using Inscribe.Subsystems.KeyAssign;
 using Inscribe.Threading;
+using Inscribe.Core;
 
 namespace Mystique.Views
 {
@@ -33,7 +34,7 @@ namespace Mystique.Views
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            if (ThreadHelper.IsHalted ||
+            if (KernelService.IsAppInShutdown ||
                 MessageBox.Show(this, "Krileを終了してもよろしいですか？", "Krileの終了", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
             {
                 if (Setting.IsInitialized)
