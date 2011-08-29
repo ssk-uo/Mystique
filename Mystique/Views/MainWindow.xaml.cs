@@ -1,9 +1,8 @@
 ﻿using System.Windows;
 using Inscribe.Configuration;
+using Inscribe.Core;
 using Inscribe.Subsystems;
 using Inscribe.Subsystems.KeyAssign;
-using Inscribe.Threading;
-using Inscribe.Core;
 
 namespace Mystique.Views
 {
