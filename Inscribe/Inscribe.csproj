@@ -32,6 +32,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="EntityFramework, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Mystique\InfrastructureAssemblies\EntityFramework.dll</HintPath>
+    </Reference>
     <Reference Include="Livet">
       <HintPath>..\Mystique\InfrastructureAssemblies\Livet.dll</HintPath>
     </Reference>
@@ -43,7 +47,13 @@
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data.Entity" />
+    <Reference Include="System.Data.SqlServerCe, Version=4.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Mystique\InfrastructureAssemblies\System.Data.SqlServerCe.dll</HintPath>
+    </Reference>
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Windows.Interactivity">
       <SpecificVersion>False</SpecificVersion>
@@ -66,6 +76,9 @@
     <Compile Include="Filter\Filters\Text\FilterUrlText.cs" />
     <Compile Include="Common\KeyAssignHelper.cs" />
     <Compile Include="Filter\WeakEventBinder.cs" />
+    <Compile Include="Storage\DataBase\SerializedTweetData.cs" />
+    <Compile Include="Storage\DataBase\SerializedUserData.cs" />
+    <Compile Include="Storage\DataBase\TransparentProxy.cs" />
     <Compile Include="Storage\ImageCacheStorage.cs" />
     <Compile Include="Storage\UrlResolveCacheStorage.cs" />
     <Compile Include="Common\EnumerableEx.cs" />

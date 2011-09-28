@@ -20,6 +20,9 @@ namespace Dulcet.Twitter
 
         public DateTime CreatedAt { get; set; }
 
+        /// <summary>
+        /// DBへの格納時、Entity情報は失われます。
+        /// </summary>
         public TwitterEntityNode Entities { get; set; }
 
         public override bool Equals(object obj)
@@ -36,10 +39,5 @@ namespace Dulcet.Twitter
         {
             return (int)this.Id;
         }
-
-        /// <summary>
-        /// Krile内のインスタンスの新旧比較に利用します。
-        /// </summary>
-        public readonly DateTime CreatedTimestamp = DateTime.Now;
     }
 }

@@ -81,11 +81,11 @@ namespace Inscribe.Storage
             AccountInfo retai = null;
             if (predicate != null)
             {
-                retai = accounts.Shuffle().FirstOrDefault(predicate);
+                retai = accounts.ToArray().Shuffle().FirstOrDefault(predicate);
                 if (retai != null || !weakPredicate)
                     return retai;
             }
-            return accounts.Shuffle().FirstOrDefault();
+            return accounts.ToArray().Shuffle().FirstOrDefault();
         }
 
         /// <summary>

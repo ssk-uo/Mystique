@@ -114,12 +114,20 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         private ConcurrentObservable<UserViewModel> _retweeteds = new ConcurrentObservable<UserViewModel>();
 
+        internal void RegisterRetweetedRangeUnsafe(IEnumerable<UserViewModel> users)
+        {
+            lock (_retweeteds)
+            {
+                this._retweeteds.AddRange(users.Except(this._retweeteds));
+            }
+            RaisePropertyChanged(() => RetweetedUsers);
+        }
+
         public bool RegisterRetweeted(UserViewModel user)
         {
             lock (_retweeteds)
             {
-                if (user == null || this._retweeteds.Select(s => s.TwitterUser.ScreenName)
-                    .FirstOrDefault(s => s == user.TwitterUser.ScreenName) != null)
+                if (user == null || this._retweeteds.Contains(user))
                     return false;
                 this._retweeteds.Add(user);
             }
@@ -132,7 +140,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         {
             lock (_retweeteds)
             {
-                if (user == null || this._retweeteds.Select(s => s.TwitterUser.ScreenName).FirstOrDefault(s => s == user.TwitterUser.ScreenName) == null)
+                if (user == null || !this._retweeteds.Contains(user))
                     return false;
                 this._retweeteds.Remove(user);
             }
@@ -152,12 +160,20 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         private ConcurrentObservable<UserViewModel> _favoreds = new ConcurrentObservable<UserViewModel>();
 
+        internal void RegisterFavoredRangeUnsafe(IEnumerable<UserViewModel> users)
+        {
+            lock (_favoreds)
+            {
+                this._favoreds.AddRange(users.Except(this._favoreds));
+            }
+            RaisePropertyChanged(() => FavoredUsers);
+        }
+
         public bool RegisterFavored(UserViewModel user)
         {
             lock (_favoreds)
             {
-                if (user == null || this._favoreds.Select(s => s.TwitterUser.ScreenName)
-                    .FirstOrDefault(s => s == user.TwitterUser.ScreenName) != null)
+                if (user == null || this._favoreds.Contains(user))
                     return false;
                 this._favoreds.Add(user);
             }
@@ -170,9 +186,8 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         {
             lock (_favoreds)
             {
-                if (user == null || this._favoreds.Select(s => s.TwitterUser.ScreenName).FirstOrDefault(s => s == user.TwitterUser.ScreenName) == null)
-                    return false;
-                this._favoreds.Remove(user);
+                if (user == null || this._favoreds.Contains(user))
+                    this._favoreds.Remove(user);
             }
             TweetStorage.NotifyTweetStateChanged(this);
             RaisePropertyChanged(() => FavoredUsers);
@@ -192,6 +207,11 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         /// このツイートに返信しているツイートのID
         /// </summary>
         private ConcurrentBag<long> inReplyFroms = new ConcurrentBag<long>();
+
+        internal void RegisterInReplyFromsUnsafe(long[] ids)
+        {
+            ids.ForEach(i => this.inReplyFroms.Add(i));
+        }
 
         /// <summary>
         /// このツイートに返信を行っていることを登録します。

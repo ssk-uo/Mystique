@@ -49,7 +49,6 @@ namespace Inscribe.Data
             public static FinallyBlock<object> Create(Action pre, Action post)
             {
                 pre();
-
                 return new FinallyBlock<object>(null, _ => post());
             }
 

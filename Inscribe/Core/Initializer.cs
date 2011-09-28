@@ -7,6 +7,7 @@ using Inscribe.Configuration;
 using Inscribe.Plugin;
 using Inscribe.Storage;
 using Inscribe.Subsystems;
+using Inscribe.Storage.DataBase;
 
 namespace Inscribe.Core
 {

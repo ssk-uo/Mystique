@@ -26,5 +26,14 @@ namespace Inscribe.Data
         {
             return UpgradableReaderLock();
         }
+
+        public string WriteDown()
+        {
+            return
+                "READING:" + base.readerWriterLock.CurrentReadCount + "/" +
+                "WAITREAD:" + base.readerWriterLock.WaitingReadCount + "/" +
+                "WAITUPGR:" + base.readerWriterLock.WaitingUpgradeCount + "/" +
+                "WAITWRIT" + base.readerWriterLock.WaitingWriteCount + "/";
+        }
     }
 }

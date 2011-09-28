@@ -29,7 +29,7 @@ namespace Dulcet.Twitter
 
         #endregion
 
-        private TwitterStatus() { }
+        public TwitterStatus() { }
 
         public string Source { get; set; }
 

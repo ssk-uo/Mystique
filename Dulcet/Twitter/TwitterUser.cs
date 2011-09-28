@@ -37,6 +37,11 @@ namespace Dulcet.Twitter
 
         private TwitterUser() { }
 
+        public TwitterUser(DateTime timestamp)
+        {
+            this.CreatedTimestamp = timestamp;
+        }
+
         /// <summary>
         /// 数値ID
         /// </summary>
@@ -83,6 +88,11 @@ namespace Dulcet.Twitter
         public bool IsVerified { get; set; }
 
         /// <summary>
+        /// アカウント作成日
+        /// </summary>
+        public DateTime CreatedAt { get; set; }
+
+        /// <summary>
         /// フォロワーの数
         /// </summary>
         public long Followers { get; set; }
@@ -91,11 +101,6 @@ namespace Dulcet.Twitter
         /// フォローの数
         /// </summary>
         public long Followings { get; set; }
-
-        /// <summary>
-        /// アカウント作成日
-        /// </summary>
-        public DateTime CreatedAt { get; set; }
 
         /// <summary>
         /// お気に入りに登録したツイートの数

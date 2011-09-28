@@ -509,6 +509,39 @@
     <None Include="assigns\tween.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <Content Include="InfrastructureAssemblies\EntityFramework.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Resource Include="InfrastructureAssemblies\EntityFramework.xml" />
+    <Content Include="InfrastructureAssemblies\JA\System.Data.SqlServerCe.resources.dll" />
+    <Resource Include="InfrastructureAssemblies\JA\System.Data.SqlServerCe.xml" />
+    <Content Include="InfrastructureAssemblies\sqlceca40.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="InfrastructureAssemblies\sqlcecompact40.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="InfrastructureAssemblies\sqlceer40EN.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="InfrastructureAssemblies\sqlceer40JA.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="InfrastructureAssemblies\sqlceme40.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="InfrastructureAssemblies\sqlceoledb40.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="InfrastructureAssemblies\sqlceqp40.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="InfrastructureAssemblies\sqlcese40.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="InfrastructureAssemblies\System.Data.SqlServerCe.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="media\new.wav">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

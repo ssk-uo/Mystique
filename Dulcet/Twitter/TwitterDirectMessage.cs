@@ -25,7 +25,7 @@ namespace Dulcet.Twitter
 
         #endregion
 
-        private TwitterDirectMessage() { }
+        public TwitterDirectMessage() { }
 
         /// <summary>
         /// Userと同一です。

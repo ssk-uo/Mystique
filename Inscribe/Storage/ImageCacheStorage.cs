@@ -34,7 +34,7 @@ namespace Inscribe.Storage
 
         static ImageCacheStorage()
         {
-            lockWrap = new ReaderWriterLockWrap();
+            lockWrap = new ReaderWriterLockWrap(LockRecursionPolicy.NoRecursion);
             imageDataDictionary = new Dictionary<Uri, KeyValuePair<BitmapImage, DateTime>>();
             semaphores = new Dictionary<Uri, ManualResetEvent>();
             gcTimer = new Timer(GC, null, Setting.Instance.KernelProperty.ImageGCInitialDelay, Setting.Instance.KernelProperty.ImageGCInterval);
