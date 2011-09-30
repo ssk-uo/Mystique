@@ -11,6 +11,7 @@ using Inscribe.ViewModels.Behaviors.Messaging;
 using Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild;
 using Livet;
 using Dulcet.Twitter;
+using System.Threading;
 
 namespace Inscribe.ViewModels.PartBlocks.MainBlock
 {
@@ -214,11 +215,21 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
             this._tweetsSource.Clear();
             var collection = TweetStorage.GetAll(vm => CheckFilters(vm))
                 .Select(tvm => new TabDependentTweetViewModel(tvm, this.Parent));
-            foreach (var tvm in collection)
+            Timer timer = null;
+            try
             {
-                this._tweetsSource.AddVolatile(tvm);
+                timer = new Timer((o) => this.Commit(), null, 1500, 1500);
+                foreach (var tvm in collection)
+                {
+                    this._tweetsSource.AddVolatile(tvm);
+                }
+                this.Commit();
             }
-            this.Commit();
+            finally
+            {
+                if (timer != null)
+                    timer.Dispose();
+            }
         }
 
         public void SetSelect(ListSelectionKind kind)

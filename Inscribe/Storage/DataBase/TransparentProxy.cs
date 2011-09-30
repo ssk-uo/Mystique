@@ -8,6 +8,7 @@ using Dulcet.Twitter;
 using Inscribe.Common;
 using Inscribe.Data;
 using Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild;
+using System.Threading.Tasks;
 
 namespace Inscribe.Storage.DataBase
 {
@@ -17,8 +18,6 @@ namespace Inscribe.Storage.DataBase
     internal static class TransparentProxy
     {
         private static object dblock = new object();
-
-        private static ReaderWriterLockWrap rwlock = new ReaderWriterLockWrap(System.Threading.LockRecursionPolicy.NoRecursion);
 
         private static SerializationContext context;
 
@@ -30,9 +29,16 @@ namespace Inscribe.Storage.DataBase
 
         private static Dictionary<long, WeakReference> tweetReference;
 
+        private static QueueTaskDispatcher dbWriter;
+
         internal static void Initialize()
         {
-            ThreadHelper.Halt += () => CloseDB();
+            ThreadHelper.Halt += () =>
+            {
+                CloseDB();
+                dbWriter.Dispose();
+            };
+            dbWriter = new QueueTaskDispatcher(1);
             lock (urlock)
             {
                 userReference = new Dictionary<long, WeakReference>();
@@ -41,7 +47,7 @@ namespace Inscribe.Storage.DataBase
             {
                 tweetReference = new Dictionary<long, WeakReference>();
             }
-            using (rwlock.GetWriterLock())
+            lock (dblock)
             {
                 Database.DefaultConnectionFactory =
                     new SqlCeConnectionFactory("System.Data.SqlServerCe.4.0");
@@ -75,67 +81,99 @@ namespace Inscribe.Storage.DataBase
         internal static void UpdateTweetData(TweetViewModel tvm)
         {
             UpdateUserData(tvm.Status.User);
-            using (rwlock.GetWriterLock())
-            {
-                lock (trLock)
+            dbWriter.Enqueue(() =>
                 {
-                    // register tweet data
-                    if (!tweetReference.ContainsKey(tvm.Status.Id))
+                    lock (dblock)
                     {
-                        context.Tweets.Add(new SerializedTweetData(tvm));
-                        tweetReference.Add(tvm.Status.Id, new WeakReference(tvm));
+                        bool addNew = false;
+                        lock (trLock)
+                        {
+                            // register tweet data
+                            if (!tweetReference.ContainsKey(tvm.Status.Id))
+                            {
+                                tweetReference.Add(tvm.Status.Id, new WeakReference(tvm));
+                                addNew = true;
+                            }
+                            else
+                            {
+                                tweetReference[tvm.Status.Id] = new WeakReference(tvm);
+                                addNew = false;
+                            }
+                        }
+                        if(addNew)
+                        {
+                            context.Tweets.Add(new SerializedTweetData(tvm));
+                        }
+                        else
+                        {
+                            var registered = context.Tweets.FirstOrDefault(i => i.Id == tvm.Status.Id);
+                            registered.UpdateDynamicData(tvm);
+                        }
+                        context.SaveChanges();
                     }
-                    else
-                    {
-                        var registered = context.Tweets.FirstOrDefault(i => i.Id == tvm.Status.Id);
-                        registered.UpdateDynamicData(tvm);
-                        tweetReference[tvm.Status.Id] = new WeakReference(tvm);
-                    }
-                }
-                context.SaveChanges();
-            }
+                });
         }
 
         internal static void UpdateUserData(TwitterUser user)
         {
+            bool add = false;
             // update user
             lock (urlock)
             {
                 if (!userReference.ContainsKey(user.NumericId))
                 {
                     userReference.Add(user.NumericId, new WeakReference(user));
-                    using (rwlock.GetWriterLock())
+                    add = true;
+                }
+            }
+            if (add)
+            {
+                // register new user for DB
+                dbWriter.Enqueue(() =>
+                {
+                    lock (dblock)
                     {
                         context.Users.Add(new SerializedUserData(user));
                         context.SaveChanges();
                     }
-                }
-                else
+                });
+            }
+            else
+            {
+                // check modification of user
+                SerializedUserData registered;
+                lock (dblock)
                 {
-                    using (rwlock.GetWriterLock())
+                    registered = context.Users.FirstOrDefault(i => i.Id == user.NumericId);
+                }
+                if (registered == null) return;
+                if (registered.CreatedTimestamp.Subtract(user.CreatedTimestamp)
+                    .TotalMilliseconds < 0)
+                {
+                    lock (urlock)
                     {
-                        var users = context.Users.Select(i => i.Id).ToArray();
-                        var registered = context.Users.FirstOrDefault(i => i.Id == user.NumericId);
-                        if (registered.CreatedTimestamp.Subtract(user.CreatedTimestamp)
-                            .TotalMilliseconds < 0)
+                        userReference[user.NumericId] = new WeakReference(user);
+                    }
+                    dbWriter.Enqueue(() =>
+                    {
+                        lock (dblock)
                         {
                             registered.Overwrite(user);
-                            userReference[user.NumericId] = new WeakReference(user);
                             context.SaveChanges();
                         }
-                    }
+                    });
                 }
             }
         }
 
-        internal static TweetViewModel[] GetAllTweets()
+        internal static IEnumerable<TweetViewModel> GetAllTweets()
         {
-            long[] ids;
+            long[] ids = null;
             lock (trLock)
             {
                 ids = tweetReference.Keys.ToArray();
             }
-            return ids.Select(i => GetTweetViewModel(i)).Where(vm => vm != null).ToArray();
+            return ids.Select(i => GetTweetViewModel(i)).Where(vm => vm != null);
         }
 
         internal static TweetViewModel GetTweetViewModel(long id)
@@ -150,7 +188,7 @@ namespace Inscribe.Storage.DataBase
                     return null;
                 }
             }
-            if ((retval = wref.Target as TweetViewModel) != null)
+            if ((retval = (TweetViewModel)wref.Target) != null)
             {
                 // 参照を保持してる
                 return retval;
@@ -159,7 +197,7 @@ namespace Inscribe.Storage.DataBase
             {
                 // GCされたからもう一度取りにいこうよ！
                 SerializedTweetData st;
-                using (rwlock.GetWriterLock())
+                lock (dblock)
                 {
                     st = context.Tweets.FirstOrDefault(i => i.Id == id);
                 }
@@ -187,28 +225,31 @@ namespace Inscribe.Storage.DataBase
             {
                 if (!userReference.TryGetValue(id, out wref))
                     return null;
-                if ((retval = wref.Target as TwitterUser) != null)
+            }
+            if ((retval = wref.Target as TwitterUser) != null)
+            {
+                // 強い参照が生きてる
+                return retval;
+            }
+            else
+            {
+                SerializedUserData su;
+                lock (dblock)
                 {
-                    // 強い参照が生きてる
-                    return retval;
+                    su = context.Users.FirstOrDefault(i => i.Id == id);
                 }
-                else
+                retval = su.Rebirth();
+                lock (urlock)
                 {
-                    SerializedUserData su;
-                    using (rwlock.GetWriterLock())
-                    {
-                        su = context.Users.FirstOrDefault(i => i.Id == id);
-                    }
-                    retval = su.Rebirth();
                     userReference[id] = new WeakReference(retval);
-                    return retval;
                 }
+                return retval;
             }
         }
 
         internal static void CloseDB()
         {
-            using (rwlock.GetWriterLock())
+            lock (dblock)
             {
                 context.Dispose();
             }
@@ -242,12 +283,15 @@ namespace Inscribe.Storage.DataBase
             {
                 tweetReference.Remove(id);
             }
-            using (rwlock.GetWriterLock())
-            {
-                var tweet = context.Tweets.FirstOrDefault(t => t.Id == id);
-                context.Tweets.Remove(tweet);
-                context.SaveChanges();
-            }
+            dbWriter.Enqueue(() =>
+                {
+                    lock (dblock)
+                    {
+                        var tweet = context.Tweets.FirstOrDefault(t => t.Id == id);
+                        context.Tweets.Remove(tweet);
+                        context.SaveChanges();
+                    }
+                });
         }
     }
 

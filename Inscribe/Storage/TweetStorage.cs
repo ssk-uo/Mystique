@@ -64,7 +64,6 @@ namespace Inscribe.Storage
         {
             using (lockWrap.GetReaderLock())
             {
-                System.Diagnostics.Debug.WriteLine("enter/leave:contains" + lockWrap.WriteDown());
                 if (TransparentProxy.ContainsTweet(id))
                     return TweetExistState.Exists;
                 else if (deleteReserveds.Contains(id))
@@ -85,7 +84,6 @@ namespace Inscribe.Storage
         {
             using (createEmpty ? lockWrap.GetUpgradableReaderLock() : lockWrap.GetReaderLock())
             {
-                System.Diagnostics.Debug.WriteLine("enter/leave:get" + lockWrap.WriteDown());
                 TweetViewModel ret;
                 if (TransparentProxy.TryGetTweetViewModel(id, out ret))
                     return ret;
@@ -95,10 +93,8 @@ namespace Inscribe.Storage
                 {
                     using (lockWrap.GetWriterLock())
                     {
-                        System.Diagnostics.Debug.WriteLine("enter:getsink" + lockWrap.WriteDown());
                         var nvm = new TweetViewModel(id);
                         empties.Add(id, nvm);
-                        System.Diagnostics.Debug.WriteLine("leave:getsink" + lockWrap.WriteDown());
                         return nvm;
                     }
                 }
@@ -117,11 +113,13 @@ namespace Inscribe.Storage
         public static IEnumerable<TweetViewModel> GetAll(Func<TweetViewModel, bool> predicate = null)
         {
             IEnumerable<TweetViewModel> dav;
-            dav = TransparentProxy.GetAllTweets();
+            System.Diagnostics.Debug.WriteLine("getall");
+            dav = TransparentProxy.GetAllTweets().ToArray();
+            System.Diagnostics.Debug.WriteLine("getall finish!");
             if (predicate == null)
                 return dav;
             else
-                return dav.AsParallel().Where(predicate).ToArray();
+                return dav.AsParallel().Where(predicate);
         }
 
         /// <summary>
@@ -222,7 +220,6 @@ namespace Inscribe.Storage
             TweetViewModel viewModel;
             using (lockWrap.GetUpgradableReaderLock())
             {
-                System.Diagnostics.Debug.WriteLine("enter:regcore" + lockWrap.WriteDown());
                 if(empties.TryGetValue(statusBase.Id, out viewModel))
                 {
                     // 既にViewModelが生成済み
@@ -238,7 +235,6 @@ namespace Inscribe.Storage
                     // 全く初めて触れるステータス
                     viewModel = new TweetViewModel(statusBase);
                 }
-                System.Diagnostics.Debug.WriteLine("leave:regcore" + lockWrap.WriteDown());
             }
             if (ValidateTweet(viewModel))
             {
@@ -251,7 +247,7 @@ namespace Inscribe.Storage
                 }
                 if (chk)
                 {
-                    TransparentProxy.UpdateTweetData(viewModel);
+                    Task.Factory.StartNew(() => TransparentProxy.UpdateTweetData(viewModel));
                     Task.Factory.StartNew(() => RaiseStatusAdded(viewModel));
                 }
             }
@@ -331,16 +327,14 @@ namespace Inscribe.Storage
             TweetViewModel remobj = null;
             using (lockWrap.GetWriterLock())
             {
-                System.Diagnostics.Debug.WriteLine("enter:rmv" + lockWrap.WriteDown());
                 // 削除する
                 deleteReserveds.AddLast(id);
                 empties.Remove(id);
                 if (TransparentProxy.TryGetTweetViewModel(id, out remobj))
                 {
-                    TransparentProxy.RemoveTweet(id);
+                    Task.Factory.StartNew(() => TransparentProxy.RemoveTweet(id));
                     Task.Factory.StartNew(() => RaiseStatusRemoved(remobj));
                 }
-                System.Diagnostics.Debug.WriteLine("leave:rmv" + lockWrap.WriteDown());
             }
             if (remobj != null)
             {
@@ -363,13 +357,8 @@ namespace Inscribe.Storage
         {
             if (tweet.Status == null) // unbound tweet
                 return;
+            Task.Factory.StartNew(() => TransparentProxy.UpdateTweetData(tweet));
             Task.Factory.StartNew(() => RaiseStatusStateChanged(tweet));
-            using (lockWrap.GetWriterLock())
-            {
-                System.Diagnostics.Debug.WriteLine("enter:ntsc" + lockWrap.WriteDown());
-                TransparentProxy.UpdateTweetData(tweet);
-                System.Diagnostics.Debug.WriteLine("leaver:ntsc" + lockWrap.WriteDown());
-            }
         }
 
         #region TweetStorageChangedイベント
