@@ -10,7 +10,7 @@ using Inscribe.Data;
 using Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild;
 using System.Threading.Tasks;
 
-namespace Inscribe.Storage.DataBase
+namespace Inscribe.Storage.Perpetuation
 {
     /// <summary>
     /// キャッシュと透過プロキシを併せ持つアレ
@@ -49,11 +49,11 @@ namespace Inscribe.Storage.DataBase
             }
             lock (dblock)
             {
-                Database.DefaultConnectionFactory =
+                Perpetuation.DefaultConnectionFactory =
                     new SqlCeConnectionFactory("System.Data.SqlServerCe.4.0");
                 // Database.SetInitializer(new DropCreateDatabaseIfModelChanges<SerializationContext>());
-                Database.SetInitializer(new DropCreateDatabaseAlways<SerializationContext>());
-                var path = Path.Combine(Path.GetDirectoryName(Define.ExeFilePath), Define.DatabaseFileName);
+                Perpetuation.SetInitializer(new DropCreateDatabaseAlways<SerializationContext>());
+                var path = Path.Combine(Path.GetDirectoryName(Define.ExeFilePath), Define.TweetDatabaseFileName);
                 context = new SerializationContext(path);
                 // write-back on memory cache
                 context.Tweets.Select(t => t.Id).Distinct().ForEach(id => tweetReference.Add(id, new WeakReference(null)));
@@ -102,7 +102,7 @@ namespace Inscribe.Storage.DataBase
                         }
                         if(addNew)
                         {
-                            context.Tweets.Add(new SerializedTweetData(tvm));
+                            context.Tweets.Add(new TweetBackEnd(tvm));
                         }
                         else
                         {
@@ -133,7 +133,7 @@ namespace Inscribe.Storage.DataBase
                 {
                     lock (dblock)
                     {
-                        context.Users.Add(new SerializedUserData(user));
+                        context.Users.Add(new UserBackEnd(user));
                         context.SaveChanges();
                     }
                 });
@@ -141,7 +141,7 @@ namespace Inscribe.Storage.DataBase
             else
             {
                 // check modification of user
-                SerializedUserData registered;
+                UserBackEnd registered;
                 lock (dblock)
                 {
                     registered = context.Users.FirstOrDefault(i => i.Id == user.NumericId);
@@ -196,7 +196,7 @@ namespace Inscribe.Storage.DataBase
             else
             {
                 // GCされたからもう一度取りにいこうよ！
-                SerializedTweetData st;
+                TweetBackEnd st;
                 lock (dblock)
                 {
                     st = context.Tweets.FirstOrDefault(i => i.Id == id);
@@ -233,7 +233,7 @@ namespace Inscribe.Storage.DataBase
             }
             else
             {
-                SerializedUserData su;
+                UserBackEnd su;
                 lock (dblock)
                 {
                     su = context.Users.FirstOrDefault(i => i.Id == id);
@@ -299,8 +299,8 @@ namespace Inscribe.Storage.DataBase
     {
         public SerializationContext(string cstr) : base(cstr) { }
 
-        public IDbSet<SerializedUserData> Users { get; set; }
+        public IDbSet<UserBackEnd> Users { get; set; }
 
-        public IDbSet<SerializedTweetData> Tweets { get; set; }
+        public IDbSet<TweetBackEnd> Tweets { get; set; }
     }
 }

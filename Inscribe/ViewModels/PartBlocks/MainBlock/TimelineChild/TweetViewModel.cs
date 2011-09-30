@@ -8,6 +8,7 @@ using Inscribe.Common;
 using Inscribe.Configuration;
 using Inscribe.Data;
 using Inscribe.Storage;
+using Inscribe.Storage.Perpetuation;
 using Livet;
 using Livet.Commands;
 
@@ -18,21 +19,91 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
     /// </summary>
     public class TweetViewModel : ViewModel
     {
-        public TwitterStatusBase Status { get; private set; }
+        #region Backend services
 
-        public readonly long bindingId;
-
-        public TweetViewModel(TwitterStatusBase status)
+        private TweetBackEnd _backend;
+        /// <summary>
+        /// バックエンドをそのまま参照します。<para />
+        /// NULLが戻ることがあります。
+        /// </summary>
+        /// <remarks>
+        /// このプロパティにバインドしないでください。<para />
+        /// 適切な変更通知を受け取れない可能性があります。
+        /// </remarks>
+        public TweetBackEnd BackendCache
         {
-            if (status == null)
-                throw new ArgumentNullException("status");
-            this.bindingId = status.Id;
-            this.Status = status;
+            get
+            {
+                _lastReference = DateTime.Now;
+                return _backend;
+            }
+        }
+
+        public bool IsBackendAlive
+        {
+            get { return _backend != null; }
+        }
+
+        internal void SetBackend(TweetBackEnd backend)
+        {
+            this._backend = backend;
+            this._lastReference = DateTime.Now;
+            this._backendIsGenerated = true;
+        }
+
+        internal void ReleaseBackend()
+        {
+            this._backend = null;
+        }
+
+        private DateTime _lastReference;
+        public DateTime LastReference
+        {
+            get { return _lastReference; }
+        }
+
+        public readonly long BindingId;
+
+        private bool _backendIsGenerated;
+
+        /// <summary>
+        /// バックエンドをDBキャッシュを考慮して取得します。
+        /// </summary>
+        public TweetBackEnd Backend
+        {
+            get
+            {
+                var bec = this.BackendCache;
+                if (bec != null || !_backendIsGenerated)
+                {
+                    // バックエンドがまだ生きているか、もしくはそもそも存在していない
+                    return bec;
+                }
+                else 
+                {
+                    // DBから取得
+                    throw new NotImplementedException();
+                }
+            }
+        }
+
+        #endregion
+
+        public TweetViewModel(TweetBackEnd backend)
+        {
+            if (backend == null)
+                throw new ArgumentException("backend");
+            this.BindingId = backend.Id;
+            this._backend = backend;
+            this._backendIsGenerated = true;
+            this._lastReference = DateTime.Now;
         }
 
         public TweetViewModel(long id)
         {
-            this.bindingId = id;
+            this.BindingId = id;
+            this._backendIsGenerated = false;
+            this._lastReference = DateTime.Now;
         }
 
         /// <summary>
@@ -41,7 +112,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         public void SetStatus(TwitterStatusBase status)
         {
             if (this.Status != null) return;
-            if (status.Id != bindingId)
+            if (status.Id != BindingId)
                 throw new ArgumentException("ステータスIDが一致しません。");
             this.Status = status;
         }
@@ -492,14 +563,14 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         {
             var tdtv = obj as TweetViewModel;
             if (tdtv != null)
-                return this.bindingId == tdtv.bindingId;
+                return this.BindingId == tdtv.BindingId;
             else
                 return false;
         }
 
         public override int GetHashCode()
         {
-            return (int)this.bindingId;
+            return (int)this.BindingId;
         }
     }
 }

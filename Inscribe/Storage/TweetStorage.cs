@@ -7,10 +7,13 @@ using Dulcet.Twitter;
 using Inscribe.Common;
 using Inscribe.Configuration;
 using Inscribe.Data;
-using Inscribe.Storage.DataBase;
+using Inscribe.Storage.Perpetuation;
 using Inscribe.Subsystems;
 using Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild;
 using Livet;
+using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
+using System.IO;
 
 namespace Inscribe.Storage
 {
@@ -35,6 +38,10 @@ namespace Inscribe.Storage
         /// </summary>
         static ReaderWriterLockWrap lockWrap = new ReaderWriterLockWrap(LockRecursionPolicy.NoRecursion);
 
+        static TweetDatabase database;
+
+        static object dblock = new object();
+
         /// <summary>
         /// 仮登録ステータスディクショナリ
         /// </summary>
@@ -54,7 +61,18 @@ namespace Inscribe.Storage
         {
             operationDispatcher = new QueueTaskDispatcher(1);
             ThreadHelper.Halt += () => operationDispatcher.Dispose();
-            TransparentProxy.Initialize();
+            ThreadHelper.Halt += () => database.Dispose();
+            // load database
+            lock (dblock)
+            {
+                Database.DefaultConnectionFactory =
+                    new SqlCeConnectionFactory("System.Data.SqlServerCe.4.0");
+
+                // Initialize Tweet Database
+                Database.SetInitializer(new DropCreateDatabaseAlways<TweetDatabase>());
+                var path = Path.Combine(Path.GetDirectoryName(Define.ExeFilePath), Define.TweetDatabaseFileName);
+                database = new TweetDatabase(path);
+            }
         }
 
         /// <summary>
@@ -424,7 +442,7 @@ namespace Inscribe.Storage
             foreach (var t in ng)
             {
                 if (!AccountStorage.Contains(t.Status.User.ScreenName))
-                    Remove(t.bindingId);
+                    Remove(t.BindingId);
             }
         }
     }

@@ -4,29 +4,27 @@ using System.Linq;
 using Dulcet.Twitter;
 using Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild;
 
-namespace Inscribe.Storage.DataBase
+namespace Inscribe.Storage.Perpetuation
 {
     /// <summary>
     /// SQL Server Compact に格納するためのツイートデータ
     /// </summary>
     [Table("TweetTable")]
-    public class SerializedTweetData
+    public class TweetBackEnd
     {
         /// <summary>
         /// For deserialization
         /// </summary>
-        public SerializedTweetData() { }
+        public TweetBackEnd() { }
 
-        public SerializedTweetData(TweetViewModel tvm)
+        public TweetBackEnd(TwitterStatusBase tsb)
         {
-            this.Id = tvm.Status.Id;
-            this.Text = tvm.Status.Text;
-            this.UserId = tvm.Status.User.NumericId;
-            this.CreatedAt = tvm.Status.CreatedAt;
+            this.Id = tsb.Id;
+            this.Text = tsb.Text;
+            this.UserId = tsb.User.NumericId;
+            this.CreatedAt = tsb.CreatedAt;
 
-            UpdateDynamicData(tvm);
-
-            var status = tvm.Status as TwitterStatus;
+            var status = tsb as TwitterStatus;
             if (status != null)
             {
                 this.Source = status.Source;
@@ -36,20 +34,13 @@ namespace Inscribe.Storage.DataBase
                 this.RetweetedOriginalId = status.RetweetedOriginal == null ? 0 : status.RetweetedOriginal.Id;
                 return;
             }
-            var dmsg = tvm.Status as TwitterDirectMessage;
+            var dmsg = tsb as TwitterDirectMessage;
             if (dmsg != null)
             {
                 this.DirectMessageReceipientId = dmsg.Recipient.NumericId;
                 return;
             }
             throw new ArgumentException("Statusでもなく、DirectMessageでもありません。");
-        }
-
-        public void UpdateDynamicData(TweetViewModel tvm)
-        {
-            this.FavoredUserIds = tvm.FavoredUsers.Select(u => u.TwitterUser.NumericId).ToArray();
-            this.RetweetedUserIds = tvm.RetweetedUsers.Select(u => u.TwitterUser.NumericId).ToArray();
-            this.InReplyFroms = tvm.InReplyFroms.ToArray();
         }
 
         [Key]

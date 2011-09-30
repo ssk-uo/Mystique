@@ -2,16 +2,17 @@
 using System.ComponentModel.DataAnnotations;
 using Dulcet.Twitter;
 
-namespace Inscribe.Storage.DataBase
+namespace Inscribe.Storage.Perpetuation
 {
-    public class SerializedUserData
+    [Table("UserTable")]
+    public class UserBackEnd
     {
         /// <summary>
         /// For deserialization
         /// </summary>
-        public SerializedUserData() { }
+        public UserBackEnd() { }
 
-        public SerializedUserData(TwitterUser user)
+        public UserBackEnd(TwitterUser user)
         {
             this.Id = user.NumericId;
             Overwrite(user);

@@ -80,6 +80,8 @@ namespace Inscribe
 
         public static readonly string EventWavFile = "event.wav";
 
-        public static readonly string DatabaseFileName = "local_db.sdf";
+        public static readonly string TweetDatabaseFileName = "tweet_db.sdf";
+
+        public static readonly string UserDatabaseFileName = "user_db.sdf";
     }
 }

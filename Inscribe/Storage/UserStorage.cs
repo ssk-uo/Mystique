@@ -4,12 +4,41 @@ using System.Linq;
 using Dulcet.Twitter;
 using Dulcet.Twitter.Rest;
 using Inscribe.ViewModels.PartBlocks.MainBlock;
+using Inscribe.Data;
+using System.Threading;
+using Inscribe.Storage.Perpetuation;
+using System.Collections.Generic;
+using Inscribe.Common;
+using System.Data.Entity;
+using System.IO;
+using System.Data.Entity.Infrastructure;
 
 namespace Inscribe.Storage
 {
     public static class UserStorage
     {
-        private static ConcurrentDictionary<string, UserViewModel> dictionary = new ConcurrentDictionary<string, UserViewModel>();
+        static ReaderWriterLockWrap lockWrap = new ReaderWriterLockWrap(LockRecursionPolicy.NoRecursion);
+
+        static UserDatabase database;
+
+        static object dblock = new object();
+
+        static Dictionary<string, UserViewModel> dictionary = new Dictionary<string, UserViewModel>();
+
+        static UserStorage()
+        {
+            ThreadHelper.Halt += () => database.Dispose();
+            lock (dblock)
+            {
+                Database.DefaultConnectionFactory =   
+                    new SqlCeConnectionFactory("System.Data.SqlServerCe.4.0");
+
+                // Initialize Tweet Database
+                Database.SetInitializer(new DropCreateDatabaseAlways<TweetDatabase>());
+                var path = Path.Combine(Path.GetDirectoryName(Define.ExeFilePath), Define.UserDatabaseFileName);
+                database = new UserDatabase(path);
+            }
+        }
 
         /// <summary>
         /// キャッシュにユーザー情報が存在していたら、すぐに返します。<para />

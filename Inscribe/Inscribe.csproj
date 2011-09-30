@@ -76,9 +76,11 @@
     <Compile Include="Filter\Filters\Text\FilterUrlText.cs" />
     <Compile Include="Common\KeyAssignHelper.cs" />
     <Compile Include="Filter\WeakEventBinder.cs" />
-    <Compile Include="Storage\DataBase\SerializedTweetData.cs" />
-    <Compile Include="Storage\DataBase\SerializedUserData.cs" />
-    <Compile Include="Storage\DataBase\TransparentProxy.cs" />
+    <Compile Include="Storage\Database\TweetBackEnd.cs" />
+    <Compile Include="Storage\Database\TweetDatabase.cs" />
+    <Compile Include="Storage\Database\UserBackEnd.cs" />
+    <Compile Include="Storage\Database\TransparentProxy.cs" />
+    <Compile Include="Storage\Database\UserDatabase.cs" />
     <Compile Include="Storage\ImageCacheStorage.cs" />
     <Compile Include="Storage\UrlResolveCacheStorage.cs" />
     <Compile Include="Common\EnumerableEx.cs" />
