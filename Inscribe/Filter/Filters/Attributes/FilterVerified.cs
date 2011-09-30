@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Inscribe.Common;
+﻿using System.Collections.Generic;
 using Inscribe.Storage;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Filter.Filters.Attributes
 {
@@ -11,9 +8,11 @@ namespace Inscribe.Filter.Filters.Attributes
     {
         public FilterVerified() { }
 
-        protected override bool FilterStatus(Dulcet.Twitter.TwitterStatusBase status)
+        protected override bool FilterStatus(TweetBackEnd status)
         {
-            return TwitterHelper.GetSuggestedUser(status).IsVerified;
+            var ud = UserStorage.Lookup(status.UserId);
+            if (ud == null) return false;
+            return ud.BackEnd.IsVerified;
         }
 
         public override string Identifier

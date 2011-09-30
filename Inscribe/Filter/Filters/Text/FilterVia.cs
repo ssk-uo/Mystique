@@ -1,4 +1,4 @@
-﻿using Dulcet.Twitter;
+﻿using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Filter.Filters.Text
 {
@@ -14,10 +14,9 @@ namespace Inscribe.Filter.Filters.Text
             this.isCaseSensitive = isCaseSensitive;
         }
 
-        protected override bool FilterStatus(TwitterStatusBase status)
+        protected override bool FilterStatus(TweetBackEnd status)
         {
-            var st = status as TwitterStatus;
-            return st != null && this.Match(st.Source, this.needle, this.isCaseSensitive);
+            return !status.IsDirectMessage && this.Match(status.Source, this.needle, this.isCaseSensitive);
         }
 
         public override string Identifier

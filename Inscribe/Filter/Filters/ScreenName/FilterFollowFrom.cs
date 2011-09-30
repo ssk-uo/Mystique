@@ -2,6 +2,7 @@
 using Dulcet.Twitter;
 using Inscribe.Filter.Core;
 using Inscribe.Storage;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Filter.Filters.ScreenName
 {
@@ -29,20 +30,21 @@ namespace Inscribe.Filter.Filters.ScreenName
             this.acceptBlocking = acceptBlocking;
         }
 
-        protected override bool FilterStatus(Dulcet.Twitter.TwitterStatusBase status)
+        protected override bool FilterStatus(TweetBackEnd status)
         {
-            var ts = status as TwitterStatus;
-            if (ts != null && ts.RetweetedOriginal != null && !acceptBlocking)
+            if (status.IsDirectMessage || status.RetweetedOriginalId != 0)
             {
                 return AccountStorage.Accounts.Where(i => Match(i.ScreenName, needle))
-                    .Any(i => i.IsFollowing(status.User.NumericId)) &&
-                       AccountStorage.Accounts.Where(i => Match(i.ScreenName, needle))
-                    .All(i => !i.IsBlocking(ts.RetweetedOriginal.User.NumericId));
+                    .Any(i => i.IsFollowing(status.UserId));
             }
             else
             {
+                var rtd = TweetStorage.Get(status.RetweetedOriginalId);
                 return AccountStorage.Accounts.Where(i => Match(i.ScreenName, needle))
-                    .Any(i => i.IsFollowing(status.User.NumericId));
+                    .Any(i => i.IsFollowing(status.UserId)) &&
+                    (rtd == null ||
+                    AccountStorage.Accounts.Where(i => Match(i.ScreenName, needle))
+                    .All(i => i.IsBlocking(rtd.BackEnd.UserId)));
             }
         }
 

@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dulcet.Twitter;
 using Inscribe.Filter.Core;
-using Livet;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Filter
 {
@@ -16,19 +15,19 @@ namespace Inscribe.Filter
         /// フィルタを適用します。
         /// </summary>
         /// <returns>フィルタを通過したか</returns>
-        public bool Filter(TwitterStatusBase status)
+        public bool Filter(TweetBackEnd status)
         {
             return FilterStatus(status) == !Negate;
         }
 
-        protected abstract bool FilterStatus(TwitterStatusBase status);
+        protected abstract bool FilterStatus(TweetBackEnd status);
 
         /// <summary>
         /// 現在適用中のフィルタを破棄し、フィルタを再適用するように要求されました。
         /// </summary>
         public event Action RequireReaccept = () => { };
 
-        public event Action<TwitterStatusBase> RequirePartialReaccept = _ => { };
+        public event Action<long> RequirePartialReaccept = _ => { };
 
         /// <summary>
         /// フィルタの再適用要求を発行します。
@@ -42,9 +41,9 @@ namespace Inscribe.Filter
         /// 指定したツイートをこのフィルタを保持しているクラスタに再度通します。<para />
         /// 存在していないツイートがフィルタを通れば追加され、存在しているツイートがフィルタを通らなくなれば除去されます。
         /// </summary>
-        protected void RaisePartialRequireReaccept(TwitterStatusBase tsb)
+        protected void RaisePartialRequireReaccept(long id)
         {
-            RequirePartialReaccept(tsb);
+            RequirePartialReaccept(id);
         }
 
         /// <summary>

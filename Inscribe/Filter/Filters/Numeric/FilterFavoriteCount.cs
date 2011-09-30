@@ -2,6 +2,7 @@
 using System.Linq;
 using Inscribe.Filter.Core;
 using Inscribe.Storage;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Filter.Filters.Numeric
 {
@@ -25,7 +26,7 @@ namespace Inscribe.Filter.Filters.Numeric
                 {
                     if (edev.EventDescription.Kind == EventKind.Favorite || edev.EventDescription.Kind == EventKind.Unfavorite)
                     {
-                        this.RaisePartialRequireReaccept(edev.EventDescription.TargetTweet.Status);
+                        this.RaisePartialRequireReaccept(edev.EventDescription.TargetTweet.BindingId);
                     }
                 };
         }
@@ -40,7 +41,7 @@ namespace Inscribe.Filter.Filters.Numeric
             this.Range = LongRange.FromPivotValue(pivot);
         }
         
-        protected override bool FilterStatus(Dulcet.Twitter.TwitterStatusBase status)
+        protected override bool FilterStatus(TweetBackEnd status)
         {
             var ts = TweetStorage.Get(status.Id);
             if (ts == null) return false;

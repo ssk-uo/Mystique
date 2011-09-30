@@ -1,4 +1,5 @@
 ﻿
+using Inscribe.Storage.Perpetuation;
 namespace Inscribe.Filter.Filters.Text
 {
     public class FilterText : TextFilterBase
@@ -13,7 +14,7 @@ namespace Inscribe.Filter.Filters.Text
             this.isCaseSensitive = isCaseSensitive;
         }
 
-        protected override bool FilterStatus(Dulcet.Twitter.TwitterStatusBase status)
+        protected override bool FilterStatus(TweetBackEnd status)
         {
             return this.Match(status.Text, this.needle, this.isCaseSensitive);
         }

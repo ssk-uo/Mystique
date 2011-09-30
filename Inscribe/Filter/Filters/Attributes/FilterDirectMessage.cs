@@ -1,16 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Dulcet.Twitter;
+﻿using System.Collections.Generic;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Filter.Filters.Attributes
 {
     public class FilterDirectMessage : FilterBase
     {
-        protected override bool FilterStatus(Dulcet.Twitter.TwitterStatusBase status)
+        protected override bool FilterStatus(TweetBackEnd status)
         {
-            return status is TwitterDirectMessage;
+            return status.IsDirectMessage;
         }
 
         public override string Identifier

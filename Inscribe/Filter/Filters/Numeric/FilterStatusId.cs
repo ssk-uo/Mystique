@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using Inscribe.Filter.Core;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Filter.Filters.Numeric
 {
@@ -29,7 +27,7 @@ namespace Inscribe.Filter.Filters.Numeric
             this.Range = LongRange.FromPivotValue(pivot);
         }
 
-        protected override bool FilterStatus(Dulcet.Twitter.TwitterStatusBase status)
+        protected override bool FilterStatus(TweetBackEnd status)
         {
             return this.Range.Check(status.Id);
         }

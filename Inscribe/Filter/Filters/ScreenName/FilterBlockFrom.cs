@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using Inscribe.Storage;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Filter.Filters.ScreenName
 {
@@ -11,10 +12,10 @@ namespace Inscribe.Filter.Filters.ScreenName
             this.needle = needle;
         }
 
-        protected override bool FilterStatus(Dulcet.Twitter.TwitterStatusBase status)
+        protected override bool FilterStatus(TweetBackEnd status)
         {
             return AccountStorage.Accounts.Where(i => Match(i.ScreenName, needle))
-                .Any(i => i.IsBlocking(status.User.NumericId));
+                .Any(i => i.IsBlocking(status.UserId));
         }
 
         public override string Identifier

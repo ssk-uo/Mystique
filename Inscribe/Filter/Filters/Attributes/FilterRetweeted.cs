@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Dulcet.Twitter;
+﻿using System.Collections.Generic;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Filter.Filters.Attributes
 {
@@ -10,10 +7,9 @@ namespace Inscribe.Filter.Filters.Attributes
     {
         public FilterRetweeted() { }
 
-        protected override bool FilterStatus(Dulcet.Twitter.TwitterStatusBase status)
+        protected override bool FilterStatus(TweetBackEnd status)
         {
-            var s = status as TwitterStatus;
-            return s != null && s.RetweetedOriginal != null;
+            return status.RetweetedOriginalId != 0;
         }
 
         public override string Identifier

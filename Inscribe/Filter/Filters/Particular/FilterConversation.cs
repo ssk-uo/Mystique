@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Dulcet.Twitter;
 using Inscribe.Filter.Core;
 using Inscribe.Storage;
+using Inscribe.Storage.Perpetuation;
 using Inscribe.Text;
 
 namespace Inscribe.Filter.Filters.Particular
@@ -37,18 +37,18 @@ namespace Inscribe.Filter.Filters.Particular
             this.user2 = user2;
         }
 
-        protected override bool FilterStatus(Dulcet.Twitter.TwitterStatusBase status)
+        protected override bool FilterStatus(TweetBackEnd status)
         {
             // conversation control
-            var vm = TweetStorage.Get(status.Id);
-            if (status is TwitterDirectMessage)
+            if (status.IsDirectMessage)
             {
-                var dm = (TwitterDirectMessage)status;
+                var send = UserStorage.Lookup(status.UserId);
+                var recp = UserStorage.Lookup(status.DirectMessageReceipientId);
                 return
-                    (dm.Sender.ScreenName.Equals(user1, StringComparison.CurrentCultureIgnoreCase) &&
-                     dm.Recipient.ScreenName.Equals(user2, StringComparison.CurrentCultureIgnoreCase)) ||
-                    (dm.Sender.ScreenName.Equals(user2, StringComparison.CurrentCultureIgnoreCase) &&
-                     dm.Recipient.ScreenName.Equals(user1, StringComparison.CurrentCultureIgnoreCase));
+                    (send.BackEnd.ScreenName.Equals(user1, StringComparison.CurrentCultureIgnoreCase) &&
+                     recp.BackEnd.ScreenName.Equals(user2, StringComparison.CurrentCultureIgnoreCase)) ||
+                    (send.BackEnd.ScreenName.Equals(user2, StringComparison.CurrentCultureIgnoreCase) &&
+                     recp.BackEnd.ScreenName.Equals(user1, StringComparison.CurrentCultureIgnoreCase));
             }
             else
             {
@@ -56,14 +56,20 @@ namespace Inscribe.Filter.Filters.Particular
                     .Any(m => m.Value.Equals(user1, StringComparison.CurrentCultureIgnoreCase) ||
                         m.Value.Equals(user2, StringComparison.CurrentCultureIgnoreCase)))
                     return true;
-                if (vm.InReplyFroms.Select(id => TweetStorage.Get(id))
+                var vm = TweetStorage.Get(status.Id);
+                if (vm != null && vm.InReplyFroms.Select(id => TweetStorage.Get(id))
                     .Where(irvm => irvm != null)
-                    .Any(irvm => irvm.Status.User.ScreenName.Equals(user1, StringComparison.CurrentCultureIgnoreCase) ||
-                        irvm.Status.User.ScreenName.Equals(user2, StringComparison.CurrentCultureIgnoreCase)))
+                    .Any(irvm => CheckScreenName(irvm.BackEnd.UserId, user1) || CheckScreenName(irvm.BackEnd.UserId, user2)))
                     return true;
                 else
                     return false;
             }
+        }
+
+        private bool CheckScreenName(long userId, string checkScreenName)
+        {
+            var ud = UserStorage.Lookup(userId);
+            return ud != null && ud.BackEnd.ScreenName.Equals(checkScreenName, StringComparison.CurrentCultureIgnoreCase);
         }
 
         public override string Identifier

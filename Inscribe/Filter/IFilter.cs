@@ -1,6 +1,6 @@
 ﻿using System;
-using Dulcet.Twitter;
 using Inscribe.Filter.Core;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Filter
 {
@@ -11,7 +11,7 @@ namespace Inscribe.Filter
         /// Negate値は考慮されます。
         /// </summary>
         /// <returns>フィルタを通過したか</returns>
-        bool Filter(TwitterStatusBase status);
+        bool Filter(TweetBackEnd backend);
 
         /// <summary>
         /// 否定条件であるか
@@ -26,6 +26,6 @@ namespace Inscribe.Filter
         /// <summary>
         /// 特定のステータスについてフィルタに再度通すように要求されました。
         /// </summary>
-        event Action<TwitterStatusBase> RequirePartialReaccept;
+        event Action<long> RequirePartialReaccept;
     }
 }

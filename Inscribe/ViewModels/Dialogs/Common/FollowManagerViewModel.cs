@@ -180,7 +180,7 @@ namespace Inscribe.ViewModels.Dialogs.Common
         public void CommitRelation()
         {
             if (OrigState == State || !IsStandby) return;
-            var id = TargetUser.TwitterUser.NumericId;
+            var id = TargetUser.BackEnd.Id;
             try
             {
                 switch (State)

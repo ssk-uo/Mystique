@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Inscribe.Storage.Perpetuation;
+using Inscribe.Storage;
 
 namespace Inscribe.Filter.Filters.ScreenName
 {
@@ -14,9 +16,11 @@ namespace Inscribe.Filter.Filters.ScreenName
             this.needle = needle;
         }
 
-        protected override bool FilterStatus(Dulcet.Twitter.TwitterStatusBase status)
+        protected override bool FilterStatus(TweetBackEnd status)
         {
-            return Match(status.User.ScreenName, needle);
+            var ud = UserStorage.Lookup(status.UserId);
+            if (ud == null) return false;
+            return Match(ud.BackEnd.ScreenName, needle);
         }
 
         public override string Identifier

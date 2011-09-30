@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using Inscribe.Storage;
-using Inscribe.Text;
 using System.Text.RegularExpressions;
+using Inscribe.Storage.Perpetuation;
+using Inscribe.Text;
 
 namespace Inscribe.Filter.Filters.ScreenName
 {
@@ -17,7 +15,7 @@ namespace Inscribe.Filter.Filters.ScreenName
             this.needle = needle;
         }
 
-        protected override bool FilterStatus(Dulcet.Twitter.TwitterStatusBase status)
+        protected override bool FilterStatus(TweetBackEnd status)
         {
             return RegularExpressions.AtRegex.Matches(status.Text)
                 .Cast<Match>().Any(m => Match(m.Groups[1].Value, needle));

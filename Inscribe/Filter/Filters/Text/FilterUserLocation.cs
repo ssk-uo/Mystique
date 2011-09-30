@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Inscribe.Storage;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Filter.Filters.Text
 {
@@ -14,9 +15,11 @@ namespace Inscribe.Filter.Filters.Text
             this.isCaseSensitive = isCaseSensitive;
         }
 
-        protected override bool FilterStatus(Dulcet.Twitter.TwitterStatusBase status)
+        protected override bool FilterStatus(TweetBackEnd status)
         {
-            return this.Match(status.User.Location, this.needle, this.isCaseSensitive);
+            var ud = UserStorage.Lookup(status.UserId);
+            if (ud == null) return false;
+            return this.Match(ud.BackEnd.Location, this.needle, this.isCaseSensitive);
         }
 
         public override string Identifier

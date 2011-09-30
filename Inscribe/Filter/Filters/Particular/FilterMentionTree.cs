@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Dulcet.Twitter;
 using Dulcet.Twitter.Rest;
-using Inscribe.Filter.Core;
 using Inscribe.Common;
+using Inscribe.Filter.Core;
 using Inscribe.Storage;
-using System.Linq;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Filter.Filters.Particular
 {
@@ -54,12 +55,11 @@ namespace Inscribe.Filter.Filters.Particular
                     RaiseRequireReaccept();
                     return;
                 }
-                var ts = tweet.Status as TwitterStatus;
-                if (ts != null && ts.InReplyToStatusId != 0)
+                if (tweet.BackEnd.InReplyToStatusId != 0)
                 {
-                    this.tracePoint = ts.InReplyToStatusId;
-                    RaisePartialRequireReaccept(ts);
-                    RecursiveCheckId(ts.InReplyToStatusId);
+                    this.tracePoint = tweet.BackEnd.InReplyToStatusId;
+                    RaisePartialRequireReaccept(tweet.BindingId);
+                    RecursiveCheckId(tweet.BackEnd.InReplyToStatusId);
                     tweet.RefreshInReplyToInfo(); // 返信情報の更新を通知
                 }
                 else
@@ -105,7 +105,7 @@ namespace Inscribe.Filter.Filters.Particular
             }
         }
 
-        protected override bool FilterStatus(Dulcet.Twitter.TwitterStatusBase status)
+        protected override bool FilterStatus(TweetBackEnd status)
         {
             return TraceId(status.Id);
         }
@@ -115,13 +115,12 @@ namespace Inscribe.Filter.Filters.Particular
             var vm = TweetStorage.Get(id);
             if (vm == null || !vm.IsStatusInfoContains)
                 return false;
-            if (vm.Status.Id == tracePoint)
+            if (vm.BindingId == tracePoint)
                 return true;
-            var ts = vm.Status as TwitterStatus;
-            if (ts == null || ts.InReplyToStatusId == 0)
+            if (vm.BackEnd.InReplyToStatusId == 0)
                 return false;
             else
-                return TraceId(ts.InReplyToStatusId);
+                return TraceId(vm.BackEnd.InReplyToStatusId);
         }
 
         public override string Identifier

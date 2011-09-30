@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using System.Text.RegularExpressions;
 using Inscribe.Text;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Filter.Filters.Text
 {
@@ -16,7 +17,7 @@ namespace Inscribe.Filter.Filters.Text
             this.isCaseSensitive = isCaseSensitive;
         }
 
-        protected override bool FilterStatus(Dulcet.Twitter.TwitterStatusBase status)
+        protected override bool FilterStatus(TweetBackEnd status)
         {
             return RegularExpressions.UrlRegex.Matches(status.Text).OfType<Match>()
                 .Any(m => this.Match(m.Value, this.needle, this.isCaseSensitive));

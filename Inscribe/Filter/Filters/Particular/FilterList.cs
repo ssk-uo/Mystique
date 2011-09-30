@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Inscribe.Filter.Core;
 using Inscribe.Storage;
-using System.Threading;
-using Dulcet.Twitter;
-using System.Threading.Tasks;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Filter.Filters.Particular
 {
@@ -46,18 +44,17 @@ namespace Inscribe.Filter.Filters.Particular
 
         private int initCheckFlag = 0;
 
-        protected override bool FilterStatus(Dulcet.Twitter.TwitterStatusBase status)
+        protected override bool FilterStatus(TweetBackEnd status)
         {
             bool init = Interlocked.Exchange(ref initCheckFlag,1) == 0;
             if (ListStorage.IsListMemberCached(this.listUser, this.listName))
             {
-                var ids = 
-                 ListStorage.GetListMembers(this.listUser, this.listName)
-                    .Select(u => u.TwitterUser.ScreenName).ToArray();
-                return ids.Contains(status.User.ScreenName) &&
-                    (!(status is TwitterStatus) ||
-                    String.IsNullOrEmpty(((TwitterStatus)status).InReplyToUserScreenName) ||
-                    ids.Contains(((TwitterStatus)status).InReplyToUserScreenName));
+                var ids = ListStorage.GetListMembers(this.listUser, this.listName)
+                    .Select(u => u.BackEnd.Id).ToArray();
+                return ids.Contains(status.UserId) &&
+                    (status.IsDirectMessage ||
+                    status.InReplyToUserId == 0 ||
+                    ids.Contains(status.InReplyToUserId));
             }
             else
             {

@@ -14,6 +14,7 @@ using Livet;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.IO;
+using Inscribe.ViewModels.PartBlocks.MainBlock;
 
 namespace Inscribe.Storage
 {
@@ -42,6 +43,8 @@ namespace Inscribe.Storage
 
         static object dblock = new object();
 
+        static Dictionary<long, TweetViewModel> dictionary = new Dictionary<long, TweetViewModel>();
+
         /// <summary>
         /// 仮登録ステータスディクショナリ
         /// </summary>
@@ -63,16 +66,7 @@ namespace Inscribe.Storage
             ThreadHelper.Halt += () => operationDispatcher.Dispose();
             ThreadHelper.Halt += () => database.Dispose();
             // load database
-            lock (dblock)
-            {
-                Database.DefaultConnectionFactory =
-                    new SqlCeConnectionFactory("System.Data.SqlServerCe.4.0");
 
-                // Initialize Tweet Database
-                Database.SetInitializer(new DropCreateDatabaseAlways<TweetDatabase>());
-                var path = Path.Combine(Path.GetDirectoryName(Define.ExeFilePath), Define.TweetDatabaseFileName);
-                database = new TweetDatabase(path);
-            }
         }
 
         /// <summary>
@@ -82,7 +76,7 @@ namespace Inscribe.Storage
         {
             using (lockWrap.GetReaderLock())
             {
-                if (TransparentProxy.ContainsTweet(id))
+                if (dictionary.ContainsKey(id))
                     return TweetExistState.Exists;
                 else if (deleteReserveds.Contains(id))
                     return TweetExistState.ServerDeleted;
@@ -103,7 +97,7 @@ namespace Inscribe.Storage
             using (createEmpty ? lockWrap.GetUpgradableReaderLock() : lockWrap.GetReaderLock())
             {
                 TweetViewModel ret;
-                if (TransparentProxy.TryGetTweetViewModel(id, out ret))
+                if (dictionary.TryGetValue(id, out ret))
                     return ret;
                 if (empties.TryGetValue(id, out ret))
                     return ret;
@@ -130,14 +124,13 @@ namespace Inscribe.Storage
         /// <returns>条件にマッチするステータス、または登録されているすべてのステータス</returns>
         public static IEnumerable<TweetViewModel> GetAll(Func<TweetViewModel, bool> predicate = null)
         {
-            IEnumerable<TweetViewModel> dav;
-            System.Diagnostics.Debug.WriteLine("getall");
-            dav = TransparentProxy.GetAllTweets().ToArray();
-            System.Diagnostics.Debug.WriteLine("getall finish!");
-            if (predicate == null)
-                return dav;
-            else
-                return dav.AsParallel().Where(predicate);
+            using (lockWrap.GetReaderLock())
+            {
+                if (predicate == null)
+                    return dictionary.Values.ToArray();
+                else
+                    return dictionary.Values.AsParallel().Where(predicate).ToArray();
+            }
         }
 
         /// <summary>
@@ -145,7 +138,10 @@ namespace Inscribe.Storage
         /// </summary>
         public static int Count()
         {
-            return TransparentProxy.TweetsCount;
+            using (lockWrap.GetReaderLock())
+            {
+                return dictionary.Count;
+            }
         }
 
         /// <summary>
@@ -197,7 +193,7 @@ namespace Inscribe.Storage
                         vm.SetStatus(status.RetweetedOriginal);
                     // 自分が関係していれば
                     if (AccountStorage.Contains(status.RetweetedOriginal.User.ScreenName)
-                        || AccountStorage.Contains(user.TwitterUser.ScreenName))
+                        || AccountStorage.Contains(user.BackEnd.ScreenName))
                         EventStorage.OnRetweeted(vm, user);
                 }
             }
@@ -282,15 +278,15 @@ namespace Inscribe.Storage
         /// <returns></returns>
         public static bool ValidateTweet(TweetViewModel viewModel)
         {
-            if (viewModel.Status == null || viewModel.Status.User == null || String.IsNullOrEmpty(viewModel.Status.User.ScreenName))
+            if (viewModel.BackEnd == null || viewModel.BackEnd.User == null || String.IsNullOrEmpty(viewModel.BackEnd.User.ScreenName))
                 throw new ArgumentException("データが破損しています。");
             // Local mute
             if (Setting.Instance.TimelineFilteringProperty.MuteFilterCluster != null &&
-                Setting.Instance.TimelineFilteringProperty.MuteFilterCluster.Filter(viewModel.Status))
+                Setting.Instance.TimelineFilteringProperty.MuteFilterCluster.Filter(viewModel.BackEnd))
                 return false;
             // Block Sharing
             if (Setting.Instance.TimelineFilteringProperty.MuteBlockedUsers &&
-                AccountStorage.Accounts.Any(a => a.IsBlocking(viewModel.Status.User.NumericId)))
+                AccountStorage.Accounts.Any(a => a.IsBlocking(viewModel.BackEnd.UserId)))
                 return false;
             return true;
         }
@@ -357,7 +353,7 @@ namespace Inscribe.Storage
             if (remobj != null)
             {
                 // リツイート判定
-                var status = remobj.Status as TwitterStatus;
+                var status = remobj.BackEnd as TwitterStatus;
                 if (status != null && status.RetweetedOriginal != null)
                 {
                     var ros = TweetStorage.Get(status.RetweetedOriginal.Id);
@@ -373,7 +369,7 @@ namespace Inscribe.Storage
         /// </summary>
         public static void NotifyTweetStateChanged(TweetViewModel tweet)
         {
-            if (tweet.Status == null) // unbound tweet
+            if (tweet.BackEnd == null) // unbound tweet
                 return;
             Task.Factory.StartNew(() => TransparentProxy.UpdateTweetData(tweet));
             Task.Factory.StartNew(() => RaiseStatusStateChanged(tweet));
@@ -410,11 +406,15 @@ namespace Inscribe.Storage
             // +
             // Retweet通知設定がないか、
             // 自分のTweetのRetweetでない場合にのみRegisterする
+            TweetViewModel tvm;
+            UserViewModel uvm;
             if ((!Setting.Instance.NotificationProperty.NotifyMention ||
-                !TwitterHelper.IsMentionOfMe(added.Status)) &&
+                !TwitterHelper.IsMentionOfMe(added.BackEnd)) &&
                 (!Setting.Instance.NotificationProperty.NotifyRetweet ||
-                !(added.Status is TwitterStatus) || ((TwitterStatus)added.Status).RetweetedOriginal == null ||
-                !AccountStorage.Contains(((TwitterStatus)added.Status).RetweetedOriginal.User.ScreenName)))
+                added.BackEnd.IsDirectMessage || added.BackEnd.RetweetedOriginalId == 0 ||
+                ((tvm = TweetStorage.Get(added.BackEnd.RetweetedOriginalId)) != null &&
+                (uvm = UserStorage.Lookup(tvm.BackEnd.UserId)) != null &&
+                AccountStorage.Contains(uvm.BackEnd.ScreenName))))
                 NotificationCore.RegisterNotify(added);
             OnTweetStorageChanged(new TweetStorageChangedEventArgs(TweetActionKind.Added, added));
             NotificationCore.DispatchNotify(added);
@@ -438,10 +438,10 @@ namespace Inscribe.Storage
         internal static void UpdateMute()
         {
             if (Setting.Instance.TimelineFilteringProperty.MuteFilterCluster == null) return;
-            var ng = GetAll(t => Setting.Instance.TimelineFilteringProperty.MuteFilterCluster.Filter(t.Status)).ToArray();
+            var ng = GetAll(t => Setting.Instance.TimelineFilteringProperty.MuteFilterCluster.Filter(t.BackEnd)).ToArray();
             foreach (var t in ng)
             {
-                if (!AccountStorage.Contains(t.Status.User.ScreenName))
+                if (!AccountStorage.Contains(t.BackEnd.User.ScreenName))
                     Remove(t.BindingId);
             }
         }

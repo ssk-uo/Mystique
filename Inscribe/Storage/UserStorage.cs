@@ -1,17 +1,16 @@
 ﻿using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
+using System.IO;
 using System.Linq;
+using System.Threading;
 using Dulcet.Twitter;
 using Dulcet.Twitter.Rest;
-using Inscribe.ViewModels.PartBlocks.MainBlock;
-using Inscribe.Data;
-using System.Threading;
-using Inscribe.Storage.Perpetuation;
-using System.Collections.Generic;
 using Inscribe.Common;
-using System.Data.Entity;
-using System.IO;
-using System.Data.Entity.Infrastructure;
+using Inscribe.Data;
+using Inscribe.Storage.Perpetuation;
+using Inscribe.ViewModels.PartBlocks.MainBlock;
 
 namespace Inscribe.Storage
 {
@@ -19,26 +18,7 @@ namespace Inscribe.Storage
     {
         static ReaderWriterLockWrap lockWrap = new ReaderWriterLockWrap(LockRecursionPolicy.NoRecursion);
 
-        static UserDatabase database;
-
-        static object dblock = new object();
-
-        static Dictionary<string, UserViewModel> dictionary = new Dictionary<string, UserViewModel>();
-
-        static UserStorage()
-        {
-            ThreadHelper.Halt += () => database.Dispose();
-            lock (dblock)
-            {
-                Database.DefaultConnectionFactory =   
-                    new SqlCeConnectionFactory("System.Data.SqlServerCe.4.0");
-
-                // Initialize Tweet Database
-                Database.SetInitializer(new DropCreateDatabaseAlways<TweetDatabase>());
-                var path = Path.Combine(Path.GetDirectoryName(Define.ExeFilePath), Define.UserDatabaseFileName);
-                database = new UserDatabase(path);
-            }
-        }
+        static Dictionary<long, UserViewModel> dictionary = new Dictionary<long, UserViewModel>();
 
         /// <summary>
         /// キャッシュにユーザー情報が存在していたら、すぐに返します。<para />
@@ -48,11 +28,16 @@ namespace Inscribe.Storage
         {
             if (userScreenName == null)
                 throw new ArgumentNullException("userScreenName");
+            using (lockWrap.GetReaderLock())
+            {
+                return dictionary.Values.Where(u => u.BackEnd.ScreenName == userScreenName).FirstOrDefault();
+            }
+        }
+
+        public static UserViewModel Lookup(long id)
+        {
             UserViewModel ret;
-            if (dictionary.TryGetValue(userScreenName, out ret))
-                return ret;
-            else
-                return null;
+            return dictionary.TryGetValue(id, out ret) ? ret : null;
         }
 
         /// <summary>
@@ -72,8 +57,11 @@ namespace Inscribe.Storage
         {
             if (user == null)
                 throw new ArgumentNullException("user");
-            var newvm = new UserViewModel(user);
-            dictionary.AddOrUpdate(user.ScreenName, newvm);
+            var newvm = new UserViewModel(new UserBackEnd(user));
+            using (lockWrap.GetWriterLock())
+            {
+                dictionary.Add(user.NumericId, newvm);
+            }
             return newvm;
         }
 
@@ -89,7 +77,7 @@ namespace Inscribe.Storage
             if (String.IsNullOrEmpty(userScreenName))
                 throw new ArgumentNullException("userScreenName", "userScreenNameがNullであるか、または空白です。");
             UserViewModel ret = null;
-            if (useCache && dictionary.TryGetValue(userScreenName, out ret))
+            if (useCache && (ret = Lookup(userScreenName)) != null)
             {
                 return ret;
             }
@@ -103,8 +91,11 @@ namespace Inscribe.Storage
                         var ud = acc.GetUserByScreenName(userScreenName);
                         if (ud != null)
                         {
-                            var uvm = new UserViewModel(ud);
-                            dictionary.AddOrUpdate(userScreenName, uvm);
+                            var uvm = new UserViewModel(new UserBackEnd(ud));
+                            using (lockWrap.GetWriterLock())
+                            {
+                                dictionary.Add(ud.NumericId, uvm);
+                            }
                             return uvm;
                         }
                     }
@@ -127,7 +118,10 @@ namespace Inscribe.Storage
         /// <returns></returns>
         public static UserViewModel[] GetAll()
         {
-            return dictionary.Values.ToArray();
+            using (lockWrap.GetReaderLock())
+            {
+                return dictionary.Values.ToArray();
+            }
         }
     }
 }

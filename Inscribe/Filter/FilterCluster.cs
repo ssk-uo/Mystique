@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dulcet.Twitter;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Filter
 {
@@ -63,9 +63,9 @@ namespace Inscribe.Filter
             this.RequireReaccept();
         }
 
-        void filter_RequirePartialReaccept(TwitterStatusBase tsb)
+        void filter_RequirePartialReaccept(long id)
         {
-            this.RequirePartialReaccept(tsb);
+            this.RequirePartialReaccept(id);
         }
 
         #endregion
@@ -83,7 +83,7 @@ namespace Inscribe.Filter
         /// </summary>
         /// <param name="status">フィルタテストするステータス</param>
         /// <returns>ステータスがフィルタに合致するか</returns>
-        public bool Filter(TwitterStatusBase status)
+        public bool Filter(TweetBackEnd status)
         {
             if (_filters != null)
             {
@@ -102,7 +102,7 @@ namespace Inscribe.Filter
 
         public event Action RequireReaccept = () => { };
 
-        public event Action<TwitterStatusBase> RequirePartialReaccept = _ => { };
+        public event Action<long> RequirePartialReaccept = _ => { };
 
         /// <summary>
         /// 否定フィルタであるか

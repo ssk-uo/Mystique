@@ -55,7 +55,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
             {
                 if (value == null ?
                     _user == null :
-                    _user != null && _user.TwitterUser.ScreenName == value.TwitterUser.ScreenName)
+                    _user != null && _user.BackEnd.ScreenName == value.BackEnd.ScreenName)
                     return;
                 _user = value;
                 RaisePropertyChanged(() => User);
@@ -92,7 +92,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.TwitterUser.ProfileImage : null;
+                return User != null ? User.BackEnd.ProfileImage : null;
             }
         }
 
@@ -100,7 +100,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.TwitterUser.ScreenName : String.Empty;
+                return User != null ? User.BackEnd.ScreenName : String.Empty;
             }
         }
 
@@ -108,7 +108,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.TwitterUser.UserName : String.Empty;
+                return User != null ? User.BackEnd.UserName : String.Empty;
             }
         }
 
@@ -116,7 +116,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null && User.TwitterUser.IsVerified;
+                return User != null && User.BackEnd.IsVerified;
             }
         }
 
@@ -124,7 +124,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null && User.TwitterUser.IsProtected;
+                return User != null && User.BackEnd.IsProtected;
             }
         }
 
@@ -132,7 +132,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.TwitterUser.Location : String.Empty;
+                return User != null ? User.BackEnd.Location : String.Empty;
             }
         }
 
@@ -140,7 +140,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.TwitterUser.Web : String.Empty;
+                return User != null ? User.BackEnd.Web : String.Empty;
             }
         }
 
@@ -160,9 +160,9 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         private void OpenLink(string parameter)
         {
             if (String.IsNullOrEmpty(parameter))
-                Browser.Start("http://twitter.com/" + User.TwitterUser.ScreenName);
+                Browser.Start("http://twitter.com/" + User.BackEnd.ScreenName);
             else
-                Browser.Start("http://twitter.com/" + User.TwitterUser.ScreenName + "/" + parameter);
+                Browser.Start("http://twitter.com/" + User.BackEnd.ScreenName + "/" + parameter);
         }
         #endregion
 
@@ -181,8 +181,8 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
 
         private void OpenUserWeb()
         {
-            if (User != null && User.TwitterUser.Web != null)
-                Browser.Start(User.TwitterUser.Web);
+            if (User != null && User.BackEnd.Web != null)
+                Browser.Start(User.BackEnd.Web);
         }
         #endregion
 
@@ -190,7 +190,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.TwitterUser.Bio : String.Empty;
+                return User != null ? User.BackEnd.Bio : String.Empty;
             }
         }
 
@@ -198,7 +198,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.TwitterUser.Tweets.ToString() : null;
+                return User != null ? User.BackEnd.Tweets.ToString() : null;
             }
         }
 
@@ -206,7 +206,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.TwitterUser.Favorites.ToString() : String.Empty;
+                return User != null ? User.BackEnd.Favorites.ToString() : String.Empty;
             }
         }
 
@@ -236,7 +236,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.TwitterUser.Followings.ToString() : null;
+                return User != null ? User.BackEnd.Followings.ToString() : null;
             }
         }
 
@@ -244,7 +244,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.TwitterUser.Followers.ToString() : null;
+                return User != null ? User.BackEnd.Followers.ToString() : null;
             }
         }
 
@@ -252,7 +252,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.TwitterUser.Listed.ToString() : null;
+                return User != null ? User.BackEnd.Listed.ToString() : null;
             }
         }
 
@@ -271,9 +271,9 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
 
         private void CreateUserTab()
         {
-            var desc = "@" + this.User.TwitterUser.ScreenName;
+            var desc = "@" + this.User.BackEnd.ScreenName;
             var filt = new[]{ new FilterCluster(){
-                 Filters = new[]{new FilterUserId(this.User.TwitterUser.NumericId)}}};
+                 Filters = new[]{new FilterUserId(this.User.BackEnd.Id)}}};
 
             switch (Setting.Instance.TimelineExperienceProperty.UserOpenTransition)
             {
@@ -321,14 +321,14 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
             {
                 try
                 {
-                    var acc = AccountStorage.GetRandom(a => a.Followings.Contains(this.User.TwitterUser.NumericId), true);
-                    var tweets = ApiHelper.ExecApi(() => acc.GetUserTimeline(userId: this.User.TwitterUser.NumericId, count: 100, includeRts: true));
+                    var acc = AccountStorage.GetRandom(a => a.Followings.Contains(this.User.BackEnd.Id), true);
+                    var tweets = ApiHelper.ExecApi(() => acc.GetUserTimeline(userId: this.User.BackEnd.Id, count: 100, includeRts: true));
                     if (tweets != null)
                         tweets.ForEach(t => TweetStorage.Register(t));
                 }
                 catch (Exception e)
                 {
-                    ExceptionStorage.Register(e, ExceptionCategory.TwitterError, "ユーザータイムラインを受信できませんでした: @" + this.User.TwitterUser.ScreenName, ReceiveTimeline);
+                    ExceptionStorage.Register(e, ExceptionCategory.TwitterError, "ユーザータイムラインを受信できませんでした: @" + this.User.BackEnd.ScreenName, ReceiveTimeline);
                 }
                 finally
                 {
@@ -341,7 +341,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         private void SetUserTimeline(UserViewModel user)
         {
             if (user == null) return;
-            this.TimelineListCoreViewModel.Sources = new[] { new FilterUserId(user.TwitterUser.NumericId) };
+            this.TimelineListCoreViewModel.Sources = new[] { new FilterUserId(user.BackEnd.Id) };
             Task.Factory.StartNew(() => this.TimelineListCoreViewModel.InvalidateCache());
         }
 

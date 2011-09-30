@@ -2,7 +2,7 @@
 using System.Linq;
 using Inscribe.Filter.Core;
 using Inscribe.Storage;
-using Dulcet.Twitter;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Filter.Filters.Numeric
 {
@@ -28,15 +28,15 @@ namespace Inscribe.Filter.Filters.Numeric
             {
                 if (edev.EventDescription.Kind == EventKind.Retweet)
                 {
-                    this.RaisePartialRequireReaccept(edev.EventDescription.TargetTweet.Status);
+                    this.RaisePartialRequireReaccept(edev.EventDescription.TargetTweet.BindingId);
                 }
             };
             tweb = new WeakEventBinder<TweetStorageChangedEventArgs>(TweetStorage.TweetStorageChangedEvent);
             tweb.Notify += (_, tcev) =>
                 {
-                    if (tcev.ActionKind == TweetActionKind.Removed && tcev.Tweet.Status is TwitterStatus && tcev.Tweet.IsPublishedByRetweet)
+                    if (tcev.ActionKind == TweetActionKind.Removed && !tcev.Tweet.BackEnd.IsDirectMessage && tcev.Tweet.IsPublishedByRetweet)
                     {
-                        this.RaisePartialRequireReaccept(((TwitterStatus)tcev.Tweet.Status).RetweetedOriginal);
+                        this.RaisePartialRequireReaccept(tcev.Tweet.BackEnd.RetweetedOriginalId);
                     }
                 };
         }
@@ -53,7 +53,7 @@ namespace Inscribe.Filter.Filters.Numeric
             this.Range = LongRange.FromPivotValue(pivot);
         }
 
-        protected override bool FilterStatus(Dulcet.Twitter.TwitterStatusBase status)
+        protected override bool FilterStatus(TweetBackEnd status)
         {
             var ts = TweetStorage.Get(status.Id);
             if (ts == null) return false;

@@ -6,6 +6,7 @@ using Inscribe.Storage;
 using Inscribe.Text;
 using Inscribe.ViewModels.PartBlocks.MainBlock;
 using Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Common
 {
@@ -162,6 +163,18 @@ namespace Inscribe.Common
                 var matches = RegularExpressions.AtRegex.Matches(status.Text);
                 if (matches.Count > 0 && matches.Cast<Match>().Select(m => m.Value)
                         .Where(s => AccountStorage.Contains(s)).FirstOrDefault() != null)
+                    return true;
+            }
+            return false;
+        }
+
+        public static bool IsMentionOfMe(TweetBackEnd backend)
+        {
+            if (!backend.IsDirectMessage && backend.RetweetedOriginalId == 0)
+            {
+                var matches = RegularExpressions.AtRegex.Matches(backend.Text);
+                if (matches.Count > 0 && matches.Cast<Match>().Select(m => m.Value)
+                    .Where(s => AccountStorage.Contains(s)).FirstOrDefault() != null)
                     return true;
             }
             return false;
