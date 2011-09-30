@@ -155,9 +155,8 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         private Color GetCurrentLightningColor()
         {
-            var status = this.Tweet.Status as TwitterStatus;
             var ptv = this.Parent.TabProperty;
-            if (status != null)
+            if (!this.Tweet.BackEnd.IsDirectMessage)
             {
 
                 if (Setting.Instance.ColoringProperty.MyCurrentTweet.IsActivated &&
@@ -176,7 +175,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
                     TwitterHelper.IsInReplyToMe(this.Tweet))
                     return Setting.Instance.ColoringProperty.InReplyToMeSub.GetColor();
 
-                var uvm = UserStorage.Get(this.Tweet.Status.User);
+                var uvm = UserStorage.Lookup(this.Tweet.BackEnd.UserId);
 
                 if (Setting.Instance.ColoringProperty.Friend.IsActivated &&
                     TwitterHelper.IsFollowingCurrent(uvm, ptv) &&
@@ -235,10 +234,10 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
                 var pts = Parent.CurrentForegroundTimeline.SelectedTweetViewModel;
                 if ((Setting.Instance.ColoringProperty.Selected.IsDarkActivated ||
                     Setting.Instance.ColoringProperty.Selected.IsLightActivated) &&
-                    pts != null && pts.Tweet.Status.User.NumericId == this.Tweet.Status.User.NumericId &&
-                    pts.Tweet.Status.Id != this.Tweet.Status.Id)
+                    pts != null && pts.Tweet.BackEnd.UserId == this.Tweet.BackEnd.UserId &&
+                    pts.Tweet.BindingId != this.Tweet.BindingId)
                 {
-                    if (this.Tweet.Status is TwitterDirectMessage)
+                    if (this.Tweet.BackEnd.IsDirectMessage)
                     {
                         return RoutePairColor(dark,
                             Setting.Instance.ColoringProperty.Selected,
@@ -261,7 +260,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
                 }
                 else
                 {
-                    if (this.Tweet.Status is TwitterDirectMessage)
+                    if (this.Tweet.IsDirectMessage)
                     {
                         return RoutePairColor(dark,
                             Setting.Instance.ColoringProperty.DirectMessage,
@@ -415,7 +414,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         private void ShowUserDetail()
         {
-            this.Parent.AddTopUser(TwitterHelper.GetSuggestedUser(this.Tweet).ScreenName);
+            this.Parent.AddTopUser(TwitterHelper.GetSuggestedUser(this.Tweet).BackEnd.ScreenName);
         }
         #endregion
 
@@ -434,7 +433,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         private void RetweetedUserDetail()
         {
-            this.Parent.AddTopUser(this.Tweet.Status.User.ScreenName);
+            this.Parent.AddTopUser(this.Tweet.ScreenName);
         }
         #endregion
 
@@ -453,7 +452,9 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         private void DirectMessageReceipientDetail()
         {
-            this.Parent.AddTopUser(((TwitterDirectMessage)this.Tweet.Status).Recipient.ScreenName);
+            var user = UserStorage.Lookup(this.Tweet.BackEnd.DirectMessageReceipientId);
+            if (user == null) return;
+            this.Parent.AddTopUser(user.BackEnd.ScreenName);
         }
         #endregion
 
@@ -472,19 +473,19 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         private void OpenConversation()
         {
-            var s = this.Tweet.Status as TwitterStatus;
-            if (s == null || s.InReplyToStatusId == 0) return;
+            var be = this.Tweet.BackEnd;
+            if (be.InReplyToStatusId == 0) return;
             IEnumerable<IFilter> filter = null;
             string description = String.Empty;
             if (Setting.Instance.TimelineExperienceProperty.IsShowConversationAsTree)
             {
-                filter = new[] { new FilterMentionTree(this.Tweet.Status.Id) };
-                description = "@#" + this.Tweet.Status.Id.ToString();
+                filter = new[] { new FilterMentionTree(be.Id) };
+                description = "@#" + be.Id.ToString();
             }
             else
             {
-                filter = new[] { new FilterConversation(this.Tweet.Status.User.ScreenName, ((TwitterStatus)this.Tweet.Status).InReplyToUserScreenName) };
-                description = "Cv:@" + this.Tweet.Status.User.ScreenName + "&@" + ((TwitterStatus)this.Tweet.Status).InReplyToUserScreenName;
+                filter = new[] { new FilterConversation(this.Tweet.ScreenName, be.InReplyToUserScreenName) };
+                description = "Cv:@" + this.Tweet.ScreenName + "&@" + be.InReplyToUserScreenName;
             }
             switch (Setting.Instance.TimelineExperienceProperty.ConversationTransition)
             {
@@ -525,8 +526,11 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         private void OpenDMConversation()
         {
-            var filter = new[] { new FilterConversation(this.Tweet.Status.User.ScreenName, ((TwitterDirectMessage)this.Tweet.Status).Recipient.ScreenName) };
-            var description = "DM:@" + this.Tweet.Status.User.ScreenName + "&@" + ((TwitterDirectMessage)this.Tweet.Status).Recipient.ScreenName;
+            var be = this.Tweet.BackEnd;
+            var recp = UserStorage.Lookup(be.DirectMessageReceipientId);
+            if (recp == null) return;
+            var filter = new[] { new FilterConversation(this.Tweet.ScreenName, recp.BackEnd.ScreenName) };
+            var description = "DM:@" + this.Tweet.ScreenName + "&@" + recp.BackEnd.ScreenName;
             switch (Setting.Instance.TimelineExperienceProperty.ConversationTransition)
             {
                 case TransitionMethod.ViewStack:
@@ -604,7 +608,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         public void ToggleFavorite()
         {
-            if (this.Tweet.Status is TwitterDirectMessage) return;
+            if (this.Tweet.BackEnd.IsDirectMessage) return;
             if (this.Parent.TabProperty.LinkAccountInfos.Select(ai => ai.UserViewModel)
                 .All(u => this.Tweet.FavoredUsers.Contains(u)))
             {
@@ -619,13 +623,13 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         public void Favorite()
         {
-            if (this.Tweet.Status is TwitterDirectMessage) return;
+            if (this.Tweet.BackEnd.IsDirectMessage) return;
             PostOffice.FavTweet(this.Parent.TabProperty.LinkAccountInfos, this.Tweet);
         }
 
         public void Unfavorite()
         {
-            if (this.Tweet.Status is TwitterDirectMessage) return;
+            if (this.Tweet.BackEnd.IsDirectMessage) return;
             PostOffice.UnfavTweet(this.Parent.TabProperty.LinkAccountInfos, this.Tweet);
         }
 
@@ -683,7 +687,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         public void ToggleRetweet()
         {
-            if (this.Tweet.Status is TwitterDirectMessage) return;
+            if (this.Tweet.BackEnd.IsDirectMessage) return;
             if (this.Parent.TabProperty.LinkAccountInfos.Select(ai => ai.UserViewModel)
                 .All(u => this.Tweet.RetweetedUsers.Contains(u)))
             {
@@ -698,13 +702,13 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         public void Retweet()
         {
-            if (this.Tweet.Status is TwitterDirectMessage) return;
+            if (this.Tweet.BackEnd.IsDirectMessage) return;
             PostOffice.Retweet(this.Parent.TabProperty.LinkAccountInfos, this.Tweet);
         }
 
         public void Unretweet()
         {
-            if (this.Tweet.Status is TwitterDirectMessage) return;
+            if (this.Tweet.BackEnd.IsDirectMessage) return;
             PostOffice.Unretweet(this.Parent.TabProperty.LinkAccountInfos, this.Tweet);
         }
 
@@ -749,12 +753,12 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         private void UnofficialRetweet()
         {
-            if (this.Tweet.Status is TwitterDirectMessage) return;
+            if (this.Tweet.BackEnd.IsDirectMessage) return;
             this.Parent.Parent.Parent.Parent.InputBlockViewModel.SetOpenText(true, true);
-            var status = this.Tweet.Status;
-            if(status is TwitterStatus && ((TwitterStatus)status).RetweetedOriginal != null)
-                status = ((TwitterStatus)status).RetweetedOriginal;
-            this.Parent.Parent.Parent.Parent.InputBlockViewModel.SetText(" RT @" + status.User.ScreenName + ": " + status.Text);
+            var tvm = this.Tweet;
+            if (tvm.BackEnd.RetweetedOriginalId != 0)
+                tvm = TweetStorage.Get(tvm.BackEnd.RetweetedOriginalId);
+            this.Parent.Parent.Parent.Parent.InputBlockViewModel.SetText(" RT @" + tvm.ScreenName + ": " + tvm.Text);
             this.Parent.Parent.Parent.Parent.InputBlockViewModel.SetInputCaretIndex(0);
         }
         #endregion
@@ -774,14 +778,14 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         private void Quote()
         {
-            if (this.Tweet.Status is TwitterDirectMessage) return;
+            if (this.Tweet.BackEnd.IsDirectMessage) return;
             this.Parent.Parent.Parent.Parent.InputBlockViewModel.SetOpenText(true, true);
             this.Parent.Parent.Parent.Parent.InputBlockViewModel.SetInReplyTo(null);
             this.Parent.Parent.Parent.Parent.InputBlockViewModel.SetInReplyTo(this.Tweet);
-            var status = this.Tweet.Status;
-            if (status is TwitterStatus && ((TwitterStatus)status).RetweetedOriginal != null)
-                status = ((TwitterStatus)status).RetweetedOriginal;
-            this.Parent.Parent.Parent.Parent.InputBlockViewModel.SetText(" QT @" + status.User.ScreenName + ": " + status.Text);
+            var tvm = this.Tweet;
+            if (tvm.BackEnd.RetweetedOriginalId != 0)
+                tvm = TweetStorage.Get(tvm.BackEnd.RetweetedOriginalId);
+            this.Parent.Parent.Parent.Parent.InputBlockViewModel.SetText(" QT @" + tvm.ScreenName + ": " + tvm.Text);
             this.Parent.Parent.Parent.Parent.InputBlockViewModel.SetInputCaretIndex(0);
 
         }
@@ -803,12 +807,12 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         private void Delete()
         {
             if (!this.Tweet.ShowDeleteButton) return;
-            var conf = new ConfirmationMessage("ツイート @" + this.Tweet.Status.User.ScreenName + ": " + this.Tweet.Status.Text + " を削除してもよろしいですか？", 
+            var conf = new ConfirmationMessage("ツイート @" + this.Tweet.ScreenName + ": " + this.Tweet.BackEnd.Text + " を削除してもよろしいですか？", 
                 "ツイートの削除", System.Windows.MessageBoxImage.Warning, System.Windows.MessageBoxButton.OKCancel, "Confirm");
             this.Messenger.Raise(conf);
             if (conf.Response.GetValueOrDefault())
             {
-                PostOffice.RemoveTweet(AccountStorage.Get(this.Tweet.Status.User.ScreenName), this.Tweet.Status.Id);
+                PostOffice.RemoveTweet(AccountStorage.Get(this.Tweet.ScreenName), this.Tweet.BindingId);
             }
         }
         #endregion
@@ -828,18 +832,16 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         private void ReportForSpam()
         {
-            var conf = new ConfirmationMessage("ユーザー @" + this.Tweet.Status.User.ScreenName + " をスパム報告してもよろしいですか？" + Environment.NewLine +
+            var conf = new ConfirmationMessage("ユーザー @" + this.Tweet.ScreenName + " をスパム報告してもよろしいですか？" + Environment.NewLine +
                 "(Krileに存在するすべてのアカウントでスパム報告を行います)",
                 "スパム報告の確認", System.Windows.MessageBoxImage.Warning, System.Windows.MessageBoxButton.OKCancel, "Confirm");
             this.Messenger.Raise(conf);
             if (conf.Response.GetValueOrDefault())
             {
-                AccountStorage.Accounts.ForEach(i => Task.Factory.StartNew(() => ApiHelper.ExecApi(() => i.ReportSpam(this.Tweet.Status.User.NumericId))));
-                TweetStorage.Remove(this.Tweet.Status.Id);
-                NotifyStorage.Notify("R4Sしました: @" + this.Tweet.Status.User.ScreenName);
-                Task.Factory.StartNew(() =>
-                    TweetStorage.GetAll(t => t.Status.User.NumericId == this.Tweet.Status.User.NumericId)
-                    .ForEach(vm => TweetStorage.Remove(vm.Status.Id)));
+                AccountStorage.Accounts.ForEach(i => Task.Factory.StartNew(() => ApiHelper.ExecApi(() => i.ReportSpam(this.Tweet.BackEnd.UserId))));
+                NotifyStorage.Notify("R4Sしました: @" + this.Tweet.ScreenName);
+                TweetStorage.Remove(this.Tweet.BindingId);
+                Setting.RaiseSettingValueChanged();
             }
         }
         #endregion
@@ -885,13 +887,13 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
                     ConcatenateAnd = false,
                     Negate = false,
                     Filters = this.Parent.TabProperty.TweetSources.ToArray()};
-                this.Parent.TabProperty.TweetSources = new[]{ cluster.Restrict(new FilterCluster(){ ConcatenateAnd = false, Negate = true, Filters = new[]{ new FilterUserId(user.NumericId) }}).Optimize()}.ToArray();
+                this.Parent.TabProperty.TweetSources = new[]{ cluster.Restrict(new FilterCluster(){ ConcatenateAnd = false, Negate = true, Filters = new[]{ new FilterUserId(user.BindingId) }}).Optimize()}.ToArray();
                 Task.Factory.StartNew(() => this.Parent.BaseTimeline.CoreViewModel.InvalidateCache());
             }
             else
             {
-                var filter = new[] { new FilterUserId(user.NumericId) };
-                var desc = "@" + user.ScreenName;
+                var filter = new[] { new FilterUserId(user.BindingId) };
+                var desc = "@" + user.BackEnd.ScreenName;
                 switch (Setting.Instance.TimelineExperienceProperty.UserExtractTransition)
                 {
                     case TransitionMethod.ViewStack:
@@ -925,7 +927,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         private void DirectMessage()
         {
             this.Parent.Parent.Parent.Parent.InputBlockViewModel
-                .SetText("d @" + this.Tweet.Status.User.ScreenName + " ");
+                .SetText("d @" + this.Tweet.ScreenName + " ");
             this.Parent.Parent.Parent.Parent.InputBlockViewModel
                 .SetInputCaretIndex(this.Parent.Parent.Parent.Parent.InputBlockViewModel.CurrentInputDescription.InputText.Length);
         }
@@ -966,7 +968,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         private void OpenUser(UserViewModel parameter)
         {
-            this.Parent.AddTopUser(parameter.TwitterUser.ScreenName);
+            this.Parent.AddTopUser(parameter.BackEnd.ScreenName);
         }
 
         #endregion

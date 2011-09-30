@@ -218,15 +218,15 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
                 var tvm = odo != null ? odo.DataContext as TabViewModel : null;
                 if (tvm != null)
                 {
-                    tvm.TabProperty.TweetSources = tvm.TabProperty.TweetSources.Concat(new[] { new FilterUserId(td.Status.User.NumericId) }).ToArray();
+                    tvm.TabProperty.TweetSources = tvm.TabProperty.TweetSources.Concat(new[] { new FilterUserId(td.BackEnd.UserId) }).ToArray();
                     tvm.InvalidateCache();
                 }
                 else
                 {
                     this.AddTab(new TabProperty()
                     {
-                        Name = "@" + td.Status.User.ScreenName,
-                        TweetSources = new[] { new FilterUserId(td.Status.User.NumericId) }
+                        Name = "@" + td.ScreenName,
+                        TweetSources = new[] { new FilterUserId(td.BackEnd.UserId) }
                     });
                 }
                 return;

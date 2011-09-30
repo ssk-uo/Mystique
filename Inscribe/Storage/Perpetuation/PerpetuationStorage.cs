@@ -12,7 +12,7 @@ namespace Inscribe.Storage.Perpetuation
     /// <summary>
     /// SQL Server Compact によって永続化されるストレージ サービス
     /// </summary>
-    public static class PerpetuationStorage
+    internal static class PerpetuationStorage
     {
         static object tdblock = new object();
 
@@ -22,7 +22,7 @@ namespace Inscribe.Storage.Perpetuation
 
         static UserDatabase udatabase;
 
-        public static void ConnectDB()
+        internal static void ConnectDB()
         {
             ThreadHelper.Halt += () => DisconnectDB();
             lock (tdblock)
@@ -44,7 +44,47 @@ namespace Inscribe.Storage.Perpetuation
             }
         }
 
-        public static void DisconnectDB()
+        internal static TweetBackEnd GetTweetBackEnd(long id)
+        {
+            lock (tdblock)
+            {
+                if (tdatabase != null)
+                    return tdatabase.TweetSet.Where(b => b.Id == id).FirstOrDefault();
+                else
+                    return null;
+            }
+        }
+
+        internal static void TweetSaveChange()
+        {
+            lock (tdblock)
+            {
+                if (tdatabase != null)
+                    tdatabase.SaveChanges();
+            }
+        }
+
+        internal static UserBackEnd GetUserBackEnd(long id)
+        {
+            lock (tdblock)
+            {
+                if (udatabase != null)
+                    return udatabase.UserSet.Where(b => b.Id == id).FirstOrDefault();
+                else
+                    return null;
+            }
+        }
+
+        internal static void UserSaveChange()
+        {
+            lock (udblock)
+            {
+                if (udatabase != null)
+                    udatabase.SaveChanges();
+            }
+        }
+
+        internal static void DisconnectDB()
         {
             lock (tdblock)
             {

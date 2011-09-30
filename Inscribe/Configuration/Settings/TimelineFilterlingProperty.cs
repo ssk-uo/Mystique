@@ -15,7 +15,7 @@ namespace Inscribe.Configuration.Settings
         {
             // FilterCluster is Empty.
             this.MuteFilterCluster = new FilterCluster();
-            this.MuteBlockedUsers = false;
+            this.MuteBlockedUsers = true;
         }
 
         /// <summary>

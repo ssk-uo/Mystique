@@ -87,7 +87,7 @@ namespace Inscribe.Filter.Filters.Particular
                             var vm = TweetStorage.Register(status);
                             Task.Factory.StartNew(() => RecursiveCheckId(status.Id));
                             Task.Factory.StartNew(() =>
-                                TweetStorage.GetAll(tvm => (tvm.Status is TwitterStatus) && ((TwitterStatus)tvm.Status).InReplyToStatusId == id)
+                                TweetStorage.GetAll(tvm => tvm.BackEnd.InReplyToStatusId == id)
                                     .ForEach(tvm => tvm.RefreshInReplyToInfo()));
                         }
                         else

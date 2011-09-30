@@ -99,9 +99,9 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
             Task.Factory.StartNew(() => this.InvalidateCache());
         }
 
-        void f_RequirePartialReaccept(TwitterStatusBase tsb)
+        void f_RequirePartialReaccept(long tid)
         {
-            var tvm = TweetStorage.Register(tsb);
+            var tvm = TweetStorage.Get(tid);
             if (tvm == null || !TweetStorage.ValidateTweet(tvm)) return;
             if (CheckFilters(tvm))
                 AddTweet(tvm);
@@ -195,7 +195,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
             {
                 if (!viewModel.IsStatusInfoContains) return false;
                 return (this.sources ?? this.Parent.TabProperty.TweetSources ?? new IFilter[0])
-                    .Any(f => f.Filter(viewModel.Status));
+                    .Any(f => f.Filter(viewModel.BackEnd));
             }
             catch (Exception ex)
             {

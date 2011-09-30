@@ -42,28 +42,26 @@ namespace Inscribe.ViewModels.PartBlocks.BlockCommon
                     case EventKind.Retweet:
                     case EventKind.Unfavorite:
                         // Show tweet
-                        var status = description.TargetTweet.Status as TwitterStatus;
-                        if (status != null && status.RetweetedOriginal != null)
+                        if(description.TargetTweet.BackEnd.RetweetedOriginalId != 0)
                         {
-                            return "@" + status.RetweetedOriginal.User.ScreenName + ": " 
-                                + status.RetweetedOriginal.Text;
+                            var rts = TweetStorage.Get(description.TargetTweet.BackEnd.RetweetedOriginalId);
+                            return "@" + rts.ScreenName + ": " + rts.BackEnd.Text;
                         }
                         else
                         {
-                            if (description.TargetTweet.Status == null)
+                            if (description.TargetTweet.BackEnd == null)
                                 return "(no reference)";
                             else
-                                return "@" + description.TargetTweet.Status.User.ScreenName + ": "
-                                    + description.TargetTweet.Status.Text;
+                                return "@" + description.TargetTweet.ScreenName + ": " + description.TargetTweet.BackEnd.Text;
                         }
                     case EventKind.Mention:
                     case EventKind.DirectMessage:
-                        return description.TargetTweet.Status.Text;
+                        return description.TargetTweet.BackEnd.Text;
                     default:
                         try
                         {
                             // Show user
-                            return "@" + description.TargetUser.TwitterUser.ScreenName;
+                            return "@" + description.TargetUser.BackEnd.ScreenName;
                         }
                         catch(Exception e)
                         {
@@ -140,7 +138,7 @@ namespace Inscribe.ViewModels.PartBlocks.BlockCommon
         private void ShowUser()
         {
             Core.KernelService.MainWindowViewModel.ColumnOwnerViewModel.CurrentFocusColumn.SelectedTabViewModel
-                .AddTopUser(this.SourceUser.TwitterUser.ScreenName);
+                .AddTopUser(this.SourceUser.BackEnd.ScreenName);
         }
         
         #endregion

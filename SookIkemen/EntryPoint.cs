@@ -8,6 +8,7 @@ using Inscribe.Communication.Posting;
 using Inscribe.Core;
 using Inscribe.Storage;
 using Inscribe.Subsystems;
+using Inscribe.Storage.Perpetuation;
 
 namespace SookIkemen
 {
@@ -42,20 +43,18 @@ namespace SookIkemen
             KeyAssignCore.RegisterOperation("SenselessRetweet", () =>
                 KeyAssignHelper.ExecuteTVMAction(tvm =>
                     {
-                        var ts = tvm.Tweet.Status as TwitterStatus;
-                        if (ts == null) return;
+                        if (tvm.Tweet.BackEnd.IsDirectMessage) return;
                         KernelService.MainWindowViewModel.InputBlockViewModel.SetOpenText(true, true);
-                        KernelService.MainWindowViewModel.InputBlockViewModel.SetText(BuildSenseless(ts));
+                        KernelService.MainWindowViewModel.InputBlockViewModel.SetText(BuildSenseless(tvm.Tweet.BackEnd));
                     }));
             KeyAssignCore.RegisterOperation("SenselessRetweetFast", () =>
                 KeyAssignHelper.ExecuteTVMAction(tvm =>
                 {
                     try
                     {
-                        var ts = tvm.Tweet.Status as TwitterStatus;
-                        if (ts == null) return;
+                        if (tvm.Tweet.BackEnd.IsDirectMessage) return;
                         tvm.Parent.TabProperty.LinkAccountInfos.ForEach(
-                            ai => PostOffice.UpdateTweet(ai, BuildSenseless(ts)));
+                            ai => PostOffice.UpdateTweet(ai, BuildSenseless(tvm.Tweet.BackEnd)));
                     }
                     catch (Exception e)
                     {
@@ -64,16 +63,13 @@ namespace SookIkemen
                 }));
         }
 
-        private string BuildSenseless(TwitterStatus ts)
+        private string BuildSenseless(TweetBackEnd tb)
         {
-            if (ts.RetweetedOriginal != null)
-            {
-                return "… RT @" + ts.RetweetedOriginal.User.ScreenName + ": " + ts.RetweetedOriginal.Text;
-            }
-            else
-            {
-                return "… RT @" + ts.User.ScreenName + ": " + ts.Text;
-            }
+            var rtos = tb.RetweetedOriginalId != 0 ? TweetStorage.Get(tb.RetweetedOriginalId) : null;
+            if (rtos != null)
+                tb = rtos.BackEnd;
+            var user = UserStorage.Lookup(tb.UserId);
+            return "… RT @" + user.BackEnd.ScreenName + ": " + rtos.BackEnd.Text;
         }
 
         public IConfigurator ConfigurationInterface

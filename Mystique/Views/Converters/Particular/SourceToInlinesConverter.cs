@@ -5,7 +5,6 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Media;
-using Dulcet.Twitter;
 using Inscribe.Common;
 using Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild;
 
@@ -20,25 +19,19 @@ namespace Mystique.Views.Converters.Particular
             if (!Application.Current.Dispatcher.CheckAccess())
                 return Application.Current.Dispatcher.Invoke(new Action(() => ToTarget(input, parameter)), null) as IEnumerable<Inline>;
 
-            var status = input.Status as TwitterStatus;
-            if (status != null)
+            var src = input.BackEnd.Source;
+            Match m = null;
+            if (!String.IsNullOrEmpty(src) && (m = SourceRegex.Match(src.Replace("\\", ""))).Success)
             {
-                var src = status.Source;
-                Match m = null;
-                if (!String.IsNullOrEmpty(src) && (m = SourceRegex.Match(src.Replace("\\", ""))).Success)
-                {
-                    var hlink = new Hyperlink(new Run(m.Groups[2].Value));
-                    hlink.Click += (o, e) => Browser.Start(m.Groups[1].Value);
-                    hlink.Foreground = Brushes.DodgerBlue;
-                    return new[] { hlink };
-                }
-                else
-                {
-                    return new[] { new Run(status.Source) };
-                }
+                var hlink = new Hyperlink(new Run(m.Groups[2].Value));
+                hlink.Click += (o, e) => Browser.Start(m.Groups[1].Value);
+                hlink.Foreground = Brushes.DodgerBlue;
+                return new[] { hlink };
             }
-            // ELSE
-            return new Run[0];
+            else
+            {
+                return new[] { new Run(input.BackEnd.Source) };
+            }
         }
     }
 }

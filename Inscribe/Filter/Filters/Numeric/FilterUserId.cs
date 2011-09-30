@@ -55,14 +55,14 @@ namespace Inscribe.Filter.Filters.Numeric
             {
                 if (this._range != null && this._range.From != null && this.Range.RangeType == RangeType.Pivot)
                 {
-                    var u = UserStorage.GetAll().Where(uvm => uvm.TwitterUser.NumericId == this._range.From).FirstOrDefault();
+                    var u = UserStorage.GetAll().Where(uvm => uvm.BindingId == this._range.From).FirstOrDefault();
                     if (u == null)
                     {
                         return "ユーザー数値ID:" + this.Range.ToString() + "(逆引き: Krile内に見つかりません)";
                     }
                     else
                     {
-                        return "ユーザー数値ID:" + this.Range.ToString() + "(逆引き: @" + u.TwitterUser.ScreenName + ")";
+                        return "ユーザー数値ID:" + this.Range.ToString() + "(逆引き: @" + u.BackEnd.ScreenName + ")";
                     }
                 }
                 else

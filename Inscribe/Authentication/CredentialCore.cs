@@ -1,5 +1,6 @@
 ﻿using System.Xml.Serialization;
 using Dulcet.Twitter.Credential;
+using Inscribe.Storage;
 
 namespace Inscribe.Authentication
 {
@@ -41,5 +42,23 @@ namespace Inscribe.Authentication
         /// ユーザーの@ID
         /// </summary>
         public string ScreenName { get; set; }
+
+        private long _Id = 0;
+        /// <summary>
+        /// ユーザー ID
+        /// </summary>
+        public long Id
+        {
+            get
+            {
+                if (_Id == 0)
+                    _Id = UserStorage.Get(this.ScreenName).BindingId;
+                return _Id;
+            }
+            set
+            {
+                this._Id = value;
+            }
+        }
     }
 }

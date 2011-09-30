@@ -58,7 +58,7 @@ namespace Inscribe.ViewModels.Dialogs.Common
         {
             get
             {
-                return Target.TwitterUser.ProfileImage;
+                return new Uri(Target.BackEnd.ProfileImage);
             }
         }
 
@@ -66,7 +66,7 @@ namespace Inscribe.ViewModels.Dialogs.Common
         {
             get
             {
-                return Target.TwitterUser.ScreenName;
+                return Target.BackEnd.ScreenName;
             }
         }
 
@@ -77,7 +77,7 @@ namespace Inscribe.ViewModels.Dialogs.Common
             {
                 if (_relations == null)
                     _relations = AccountStorage.Accounts
-                        .Where(e => e.ScreenName != Target.TwitterUser.ScreenName)
+                        .Where(e => e.ScreenName != Target.BackEnd.ScreenName)
                         .Select(a => new Relation(a, Target)).ToList();
                 return _relations;
             }
@@ -239,7 +239,7 @@ namespace Inscribe.ViewModels.Dialogs.Common
 
         public bool IsFollowbacked
         {
-            get { return Info.IsFollowedBy(TargetUser.TwitterUser.NumericId); }
+            get { return Info.IsFollowedBy(TargetUser.BindingId); }
         }
 
         public FollowState OrigState { get; private set; }
@@ -397,9 +397,9 @@ namespace Inscribe.ViewModels.Dialogs.Common
 
         private void RefreshUserData()
         {
-            if(Info.IsFollowing(TargetUser.TwitterUser.NumericId))
+            if(Info.IsFollowing(TargetUser.BindingId))
                 this.State = FollowState.Following;
-            else if (Info.IsBlocking(TargetUser.TwitterUser.NumericId))
+            else if (Info.IsBlocking(TargetUser.BindingId))
                 this.State = FollowState.Blocking;
             else
                 this.State = FollowState.Unfollowing;

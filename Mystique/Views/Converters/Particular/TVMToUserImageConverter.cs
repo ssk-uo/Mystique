@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Data;
-using Dulcet.Twitter;
 using Inscribe.Common;
+using Inscribe.Storage;
 using Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild;
 
 namespace Mystique.Views.Converters.Particular
@@ -26,15 +26,13 @@ namespace Mystique.Views.Converters.Particular
             {
                 case UserImageViewKind.Default:
                 case UserImageViewKind.Retweeted:
-                    return input.Status.User.ProfileImage;
+                    var rud = input.UserViewModel;
+                    return rud != null ? new Uri(rud.BackEnd.ProfileImage) : null;
                 case UserImageViewKind.DirectMessageRecipient:
-                    var dm = input.Status as TwitterDirectMessage;
-                    if (dm == null)
-                        return null;
-                    else
-                        return dm.Recipient.ProfileImage;
+                    var dud = UserStorage.Lookup(input.BackEnd.DirectMessageReceipientId);
+                    return dud != null ? new Uri(dud.BackEnd.ProfileImage) : null;
                 case UserImageViewKind.Suggested:
-                    return TwitterHelper.GetSuggestedUser(input).ProfileImage;
+                    return new Uri(TwitterHelper.GetSuggestedUser(input).BackEnd.ProfileImage);
                 default:
                     return null;
             }

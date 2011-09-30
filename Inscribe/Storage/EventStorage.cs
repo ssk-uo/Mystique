@@ -80,26 +80,26 @@ namespace Inscribe.Storage
 
         public static void OnRetweeted(TweetViewModel tweet, UserViewModel retweeter)
         {
-            if (AccountStorage.Contains(retweeter.TwitterUser.ScreenName) || tweet.CreatedAt < wakeupTime)
+            if (AccountStorage.ContainsId(retweeter.BindingId) || tweet.CreatedAt < wakeupTime)
                 return;
             Register(new EventDescription(EventKind.Retweet, retweeter,
-                    UserStorage.Get(tweet.Status.User), tweet));
+                    UserStorage.Lookup(tweet.BackEnd.UserId), tweet));
         }
 
         public static void OnFavored(TweetViewModel tweet, UserViewModel favorer)
         {
-            if (AccountStorage.Contains(favorer.TwitterUser.ScreenName))
+            if (AccountStorage.ContainsId(favorer.BindingId))
                 return;
             Register(new EventDescription(EventKind.Favorite, favorer,
-                 UserStorage.Get(tweet.Status.User), tweet));
+                 UserStorage.Lookup(tweet.BackEnd.UserId), tweet));
         }
 
         public static void OnUnfavored(TweetViewModel tweet, UserViewModel favorer)
         {
-            if (AccountStorage.Contains(favorer.TwitterUser.ScreenName))
+            if (AccountStorage.ContainsId(favorer.BindingId))
                 return;
             Register(new EventDescription(EventKind.Unfavorite,
-                favorer, UserStorage.Get(tweet.Status.User), tweet));
+                favorer, UserStorage.Lookup(tweet.BackEnd.UserId), tweet));
         }
 
         public static void OnFollowed(UserViewModel fromUser, UserViewModel toUser)
@@ -116,18 +116,18 @@ namespace Inscribe.Storage
 
         public static void OnMention(TweetViewModel tweet)
         {
-            if (AccountStorage.Contains(tweet.Status.User.ScreenName) || tweet.CreatedAt < wakeupTime)
+            if (AccountStorage.ContainsId(tweet.BackEnd.UserId) || tweet.CreatedAt < wakeupTime)
                 return;
             Register(new EventDescription(EventKind.Mention,
-                UserStorage.Get(tweet.Status.User), null, tweet));
+                UserStorage.Lookup(tweet.BackEnd.UserId), null, tweet));
         }
 
         public static void OnDirectMessage(TweetViewModel tweet)
         {
-            if (AccountStorage.Contains(tweet.Status.User.ScreenName) || tweet.CreatedAt < wakeupTime)
+            if (AccountStorage.ContainsId(tweet.BackEnd.UserId) || tweet.CreatedAt < wakeupTime)
                 return;
             Register(new EventDescription(EventKind.DirectMessage,
-                UserStorage.Get(tweet.Status.User), null, tweet));
+                UserStorage.Lookup(tweet.BackEnd.UserId), null, tweet));
         }
     }
 

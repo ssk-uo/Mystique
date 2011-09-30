@@ -44,11 +44,12 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
             get { return _backend != null; }
         }
 
-        internal void SetBackend(TweetBackEnd backend)
+        internal void SetBackEnd(TweetBackEnd backend)
         {
             this._backend = backend;
             this._lastReference = DateTime.Now;
             this._backendIsGenerated = true;
+            RaisePropertyChanged(() => BackEnd);
         }
 
         internal void ReleaseBackend()
@@ -83,6 +84,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
                 {
                     // DBから取得
                     throw new NotImplementedException();
+                    RaisePropertyChanged(() => BackEnd);
                 }
             }
         }
@@ -121,11 +123,10 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         {
             get
             {
-                var t = this.BackEnd as TwitterStatus;
-                if (t != null && t.RetweetedOriginal != null)
-                    return t.RetweetedOriginal.Text;
-                else
-                    return this.BackEnd.Text;
+                var status = this;
+                if (status.BackEnd.RetweetedOriginalId != 0)
+                    status = TweetStorage.Get(status.BackEnd.RetweetedOriginalId, true);
+                return status.BackEnd.Text;
             }
         }
 
@@ -134,6 +135,18 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         public UserViewModel UserViewModel
         {
             get { return UserStorage.Lookup(this.BackEnd.UserId); }
+        }
+
+        public string ScreenName
+        {
+            get
+            {
+                var uvm = UserViewModel;
+                if (uvm == null)
+                    return String.Empty;
+                else
+                    return uvm.BackEnd.ScreenName;
+            }
         }
 
         public Uri ProfileImage
@@ -183,7 +196,9 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         {
             get
             {
-                return "http://twitter.com/" + this.BackEnd.User.ScreenName + "/status/" + this.BackEnd.Id.ToString();
+                var uvm = UserViewModel;
+                if (uvm == null) return string.Empty;
+                return "http://twitter.com/" + this.ScreenName + "/status/" + this.BackEnd.Id.ToString();
             }
         }
 
@@ -316,7 +331,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         public void SettingValueChanged()
         {
-            RaisePropertyChanged(() => Status);
+            RaisePropertyChanged(() => BackEnd);
             RaisePropertyChanged(() => NameAreaWidth);
         }
 
@@ -345,33 +360,29 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         public bool IsProtected
         {
-            get { return TwitterHelper.GetSuggestedUser(this).IsProtected; }
+            get { return TwitterHelper.GetSuggestedUser(this).BackEnd.IsProtected; }
         }
 
         public bool IsVerified
         {
-            get { return TwitterHelper.GetSuggestedUser(this).IsVerified; }
+            get { return TwitterHelper.GetSuggestedUser(this).BackEnd.IsVerified; }
         }
 
         public bool IsStatus
         {
-            get { return this.BackEnd is TwitterStatus; }
+            get { return !this.BackEnd.IsDirectMessage; }
         }
 
         public bool IsDirectMessage
         {
-            get
-            {
-                return this.BackEnd is TwitterDirectMessage;
-            }
+            get { return this.BackEnd.IsDirectMessage; }
         }
 
         public bool IsMention
         {
             get
             {
-                var status = this.BackEnd as TwitterStatus;
-                return status != null && status.InReplyToStatusId != 0;
+                return this.BackEnd.InReplyToStatusId != 0;
             }
         }
 
@@ -403,14 +414,13 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         {
             get
             {
-                var status = this.BackEnd as TwitterStatus;
-                if (status != null && status.InReplyToStatusId != 0)
+                if (this.BackEnd.InReplyToStatusId != 0)
                 {
-                    var tweet = TweetStorage.Get(status.InReplyToStatusId);
+                    var tweet = TweetStorage.Get(this.BackEnd.InReplyToStatusId);
                     if (tweet == null || !tweet.IsStatusInfoContains)
                         return "受信していません";
                     else
-                        return "@" + tweet.BackEnd.User.ScreenName + ": " + tweet.BackEnd.Text;
+                        return "@" + tweet.ScreenName + ": " + tweet.BackEnd.Text;
                 }
                 else
                 {
@@ -445,7 +455,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         public bool ShowDeleteButton
         {
-            get { return AccountStorage.Contains(this.BackEnd.User.ScreenName); }
+            get { return AccountStorage.Contains(this.ScreenName); }
         }
 
         public bool IsMyTweet
@@ -487,7 +497,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         private void CopySTOT()
         {
-            CopyClipboard(TwitterHelper.GetSuggestedUser(this).ScreenName + ":" +
+            CopyClipboard(TwitterHelper.GetSuggestedUser(this).BackEnd.ScreenName + ":" +
                 this.TweetText + " [" + this.Permalink + "]");
 
         }
@@ -527,7 +537,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         private void CopyScreenName()
         {
-            CopyClipboard(TwitterHelper.GetSuggestedUser(this).ScreenName);
+            CopyClipboard(TwitterHelper.GetSuggestedUser(this).BackEnd.ScreenName);
         }
         #endregion
 

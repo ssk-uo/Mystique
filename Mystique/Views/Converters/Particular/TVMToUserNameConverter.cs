@@ -5,6 +5,7 @@ using Inscribe.Common;
 using Inscribe.Configuration;
 using Inscribe.Configuration.Settings;
 using Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild;
+using Inscribe.Storage;
 
 namespace Mystique.Views.Converters.Particular
 {
@@ -35,7 +36,7 @@ namespace Mystique.Views.Converters.Particular
                     return ScreenName(input);
                 case UserNameViewKind.RetweetedScreenName:
                     if (input == null) return String.Empty;
-                    return input.Status.User.ScreenName;
+                    return input.ScreenName;
                 case UserNameViewKind.ViewName:
                     switch (Setting.Instance.TweetExperienceProperty.UserNameViewMode)
                     {
@@ -59,8 +60,10 @@ namespace Mystique.Views.Converters.Particular
                             return ScreenName(input) + " (" + UserName(input) + ")";
                     }
                 case UserNameViewKind.DirectMessageTarget:
-                    if (input == null || !(input.Status is TwitterDirectMessage)) return String.Empty;
-                    return ((TwitterDirectMessage)input.Status).Recipient.ScreenName ?? String.Empty;
+                    if (input == null || !input.BackEnd.IsDirectMessage)
+                        return String.Empty;
+                    var recp = UserStorage.Lookup(input.BackEnd.DirectMessageReceipientId);
+                    return recp != null ? recp.BackEnd.ScreenName : String.Empty;
 
                 default:
                     return String.Empty;
@@ -70,13 +73,13 @@ namespace Mystique.Views.Converters.Particular
         private string UserName(TweetViewModel status)
         {
             if (status == null) return String.Empty;
-            return TwitterHelper.GetSuggestedUser(status).UserName ?? String.Empty;
+            return TwitterHelper.GetSuggestedUser(status).BackEnd.UserName ?? String.Empty;
         }
 
         private string ScreenName(TweetViewModel status)
         {
             if (status == null) return String.Empty;
-            return TwitterHelper.GetSuggestedUser(status).ScreenName ?? String.Empty;
+            return TwitterHelper.GetSuggestedUser(status).BackEnd.ScreenName ?? String.Empty;
         }
     }
 }

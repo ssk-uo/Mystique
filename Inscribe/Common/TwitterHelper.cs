@@ -7,6 +7,7 @@ using Inscribe.Text;
 using Inscribe.ViewModels.PartBlocks.MainBlock;
 using Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild;
 using Inscribe.Storage.Perpetuation;
+using System;
 
 namespace Inscribe.Common
 {
@@ -16,141 +17,124 @@ namespace Inscribe.Common
         {
             if (status == null || !status.IsStatusInfoContains) return false;
             return AccountStorage.Accounts
-                .Any(d => status.Status.User.ScreenName == d.ScreenName);
+                .Any(d => status.ScreenName == d.ScreenName);
         }
 
         public static bool IsMyCurrentTweet(TweetViewModel status, TabProperty property)
         {
             if (status == null || !status.IsStatusInfoContains || property == null) return false;
-            return property.LinkAccountScreenNames.Any(a => a == status.Status.User.ScreenName);
+            return property.LinkAccountScreenNames.Any(a => a == status.ScreenName);
         }
 
         public static bool IsRetweetedThis(TweetViewModel status)
         {
             if (status == null || !status.IsStatusInfoContains) return false;
-            var rtd = status.RetweetedUsers.Select(d => d.TwitterUser.ScreenName).ToArray();
+            var rtd = status.RetweetedUsers.Select(d => d.BackEnd.ScreenName).ToArray();
             return AccountStorage.Accounts.Any(d => rtd.Contains(d.ScreenName));
         }
 
         public static bool IsRetweetedThisWithCurrent(TweetViewModel status, TabProperty property)
         {
             if (status == null || !status.IsStatusInfoContains || property == null) return false;
-            var rtd = status.RetweetedUsers.Select(d => d.TwitterUser.ScreenName).ToArray();
+            var rtd = status.RetweetedUsers.Select(d => d.BackEnd.ScreenName).ToArray();
             return property.LinkAccountScreenNames.Any(a => rtd.Contains(a));
         }
 
         public static bool IsFavoredThis(TweetViewModel status)
         {
             if (status == null || !status.IsStatusInfoContains) return false;
-            var fvd = status.FavoredUsers.Select(d => d.TwitterUser.ScreenName).ToArray();
+            var fvd = status.FavoredUsers.Select(d => d.BackEnd.ScreenName).ToArray();
             return AccountStorage.Accounts.Any(d => fvd.Contains(d.ScreenName));
         }
 
         public static bool IsFavoredThisWithCurrent(TweetViewModel status, TabProperty property)
         {
             if (status == null || !status.IsStatusInfoContains || property == null) return false;
-            var fvd = status.FavoredUsers.Select(d => d.TwitterUser.ScreenName).ToArray();
+            var fvd = status.FavoredUsers.Select(d => d.BackEnd.ScreenName).ToArray();
             return property.LinkAccountScreenNames.Any(a => fvd.Contains(a));
         }
 
         public static bool IsInReplyToMe(TweetViewModel status)
         {
             if (status == null || !status.IsStatusInfoContains) return false;
-            return AccountStorage.Accounts.Any(d =>
-                Regex.IsMatch(status.Status.Text, "@" + d.ScreenName + "(?![a-zA-Z0-9_])", RegexOptions.Singleline | RegexOptions.IgnoreCase));
+            return AccountStorage.Accounts.Where(d => !String.IsNullOrEmpty(d.ScreenName)).Any(d =>
+                Regex.IsMatch(status.BackEnd.Text, "@" + d.ScreenName + "(?![a-zA-Z0-9_])", RegexOptions.Singleline | RegexOptions.IgnoreCase));
         }
 
         public static bool IsInReplyToMeCurrent(TweetViewModel status, TabProperty property)
         {
             if (status == null || !status.IsStatusInfoContains || property == null) return false;
             return property.LinkAccountScreenNames.Any(a =>
-                Regex.IsMatch(status.Status.Text, "@" + a + "(?![a-zA-Z0-9_])", RegexOptions.Singleline | RegexOptions.IgnoreCase));
+                Regex.IsMatch(status.BackEnd.Text, "@" + a + "(?![a-zA-Z0-9_])", RegexOptions.Singleline | RegexOptions.IgnoreCase));
         }
 
         public static bool IsInReplyToMeStrict(TweetViewModel status)
         {
             if (status == null || !status.IsStatusInfoContains) return false;
-            var s = status.Status as TwitterStatus;
-            if (s != null)
+            if (status.BackEnd.IsDirectMessage)
             {
-                return AccountStorage.Accounts.Any(d => d.ScreenName == s.InReplyToUserScreenName);
+                var recp = UserStorage.Lookup(status.BackEnd.DirectMessageReceipientId);
+                return recp != null && AccountStorage.Accounts.Any(d => d.ScreenName == recp.BackEnd.ScreenName);
             }
             else
             {
-                var dm = status.Status as TwitterDirectMessage;
-                if (dm != null)
-                {
-                    return AccountStorage.Accounts.Any(d => d.ScreenName == dm.Recipient.ScreenName);
-                }
-                else
-                {
-                    return false;
-                }
+                return AccountStorage.Accounts.Any(d => d.ScreenName == status.BackEnd.InReplyToUserScreenName);
             }
         }
 
         public static bool IsInReplyToMeCurrentStrict(TweetViewModel status, TabProperty property)
         {
             if (status == null || !status.IsStatusInfoContains || property == null) return false;
-            var s = status.Status as TwitterStatus;
-            if (s != null)
+            if (status.BackEnd.IsDirectMessage)
             {
-                return property.LinkAccountScreenNames.Any(a => a == s.InReplyToUserScreenName);
+                var recp = UserStorage.Lookup(status.BackEnd.DirectMessageReceipientId);
+                return recp != null && property.LinkAccountScreenNames.Any(a => a == recp.BackEnd.ScreenName);
             }
             else
             {
-                var dm = status.Status as TwitterDirectMessage;
-                if (dm != null)
-                {
-                    return property.LinkAccountScreenNames.Any(a => a == dm.Recipient.ScreenName);
-                }
-                else
-                {
-                    return false;
-                }
+                return property.LinkAccountScreenNames.Any(a => a == status.BackEnd.InReplyToUserScreenName);
             }
         }
 
         public static bool IsFollowingCurrent(UserViewModel user, TabProperty property)
         {
             if (user == null) return false;
-            return property.LinkAccountInfos.All(i => i.IsFollowing(user.TwitterUser.NumericId));
+            return property.LinkAccountInfos.All(i => i.IsFollowing(user.BindingId));
         }
 
         public static bool IsFollowingAny(UserViewModel user)
         {
             if (user == null) return false;
-            return AccountStorage.Accounts.Any(d => d.Followings.Contains(user.TwitterUser.NumericId));
+            return AccountStorage.Accounts.Any(d => d.Followings.Contains(user.BindingId));
         }
 
         public static bool IsFollowingAll(UserViewModel user)
         {
             if (user == null) return false;
-            return AccountStorage.Accounts.All(d => d.Followings.Contains(user.TwitterUser.NumericId));
+            return AccountStorage.Accounts.All(d => d.Followings.Contains(user.BindingId));
         }
 
         public static bool IsFollowerCurrent(UserViewModel user, TabProperty property)
         {
             if (user == null || property == null) return false;
-            return property.LinkAccountInfos.All(i => i.IsFollowedBy(user.TwitterUser.NumericId));
+            return property.LinkAccountInfos.All(i => i.IsFollowedBy(user.BindingId));
         }
 
         public static bool IsFollowerAny(UserViewModel user)
         {
-            return AccountStorage.Accounts.Any(d => d.Followers.Contains(user.TwitterUser.NumericId));
+            return AccountStorage.Accounts.Any(d => d.Followers.Contains(user.BindingId));
         }
 
         public static bool IsPublishedByRetweet(TweetViewModel status)
         {
             if (status == null || !status.IsStatusInfoContains) return false;
-            return IsPublishedByRetweet(status.Status);
+            return IsPublishedByRetweet(status.BackEnd);
         }
 
-        public static bool IsPublishedByRetweet(TwitterStatusBase status)
+        public static bool IsPublishedByRetweet(TweetBackEnd status)
         {
             if (status == null) return false;
-            var ss = status as TwitterStatus;
-            return ss != null && ss.RetweetedOriginal != null;
+            return status.RetweetedOriginalId != 0;
         }
 
         public static bool IsMentionOfMe(TwitterStatusBase status)
@@ -180,20 +164,25 @@ namespace Inscribe.Common
             return false;
         }
 
-        public static TwitterUser GetSuggestedUser(TweetViewModel status)
+        public static UserViewModel GetSuggestedUser(TweetViewModel status)
         {
-            if (IsPublishedByRetweet(status))
-                return ((TwitterStatus)status.Status).RetweetedOriginal.User;
-            else
-                return status.Status.User;
+            return GetSuggestedUser(status.BackEnd);
         }
 
-        public static TwitterUser GetSuggestedUser(TwitterStatusBase status)
+        public static UserViewModel GetSuggestedUser(TweetBackEnd backend)
         {
-            if (IsPublishedByRetweet(status))
-                return ((TwitterStatus)status).RetweetedOriginal.User;
+            if (IsPublishedByRetweet(backend))
+            {
+                var rtd = TweetStorage.Get(backend.RetweetedOriginalId);
+                if (rtd == null)
+                    return null;
+                else
+                    return UserStorage.Lookup(rtd.BackEnd.UserId);
+            }
             else
-                return status.User;
+            {
+                return UserStorage.Lookup(backend.UserId);
+            }
         }
     }
 }

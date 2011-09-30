@@ -92,7 +92,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.BackEnd.ProfileImage : null;
+                return User != null ? new Uri(User.BackEnd.ProfileImage) : null;
             }
         }
 
@@ -321,8 +321,8 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
             {
                 try
                 {
-                    var acc = AccountStorage.GetRandom(a => a.Followings.Contains(this.User.BackEnd.Id), true);
-                    var tweets = ApiHelper.ExecApi(() => acc.GetUserTimeline(userId: this.User.BackEnd.Id, count: 100, includeRts: true));
+                    var acc = AccountStorage.GetRandom(a => a.Followings.Contains(this.User.BindingId), true);
+                    var tweets = ApiHelper.ExecApi(() => acc.GetUserTimeline(userId: this.User.BindingId, count: 100, includeRts: true));
                     if (tweets != null)
                         tweets.ForEach(t => TweetStorage.Register(t));
                 }
@@ -341,7 +341,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         private void SetUserTimeline(UserViewModel user)
         {
             if (user == null) return;
-            this.TimelineListCoreViewModel.Sources = new[] { new FilterUserId(user.BackEnd.Id) };
+            this.TimelineListCoreViewModel.Sources = new[] { new FilterUserId(user.BindingId) };
             Task.Factory.StartNew(() => this.TimelineListCoreViewModel.InvalidateCache());
         }
 

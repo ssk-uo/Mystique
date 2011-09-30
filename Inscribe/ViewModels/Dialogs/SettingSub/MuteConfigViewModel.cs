@@ -42,7 +42,6 @@ namespace Inscribe.ViewModels.Dialogs.SettingSub
         {
             Setting.Instance.TimelineFilteringProperty.MuteFilterCluster =
                 new FilterCluster() { Filters = this._filterEditorViewModel.RootFilters };
-            TweetStorage.UpdateMute();
             Setting.Instance.TimelineFilteringProperty.MuteBlockedUsers = this._muteBlockedUsers;
         }
     }

@@ -108,6 +108,14 @@ namespace Inscribe.Storage
             return Get(screenName) != null;
         }
 
+        /// <summary>
+        /// アカウント IDが含まれているか確認します。
+        /// </summary>
+        public static bool ContainsId(long userId)
+        {
+            return Accounts.Where(i => i.Id == userId).FirstOrDefault() != null;
+        }
+
         public enum MoveDirection
         {
             Up,

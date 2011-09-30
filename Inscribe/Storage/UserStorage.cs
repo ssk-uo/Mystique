@@ -1,13 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.Entity;
-using System.Data.Entity.Infrastructure;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using Dulcet.Twitter;
 using Dulcet.Twitter.Rest;
-using Inscribe.Common;
 using Inscribe.Data;
 using Inscribe.Storage.Perpetuation;
 using Inscribe.ViewModels.PartBlocks.MainBlock;
@@ -60,7 +56,10 @@ namespace Inscribe.Storage
             var newvm = new UserViewModel(new UserBackEnd(user));
             using (lockWrap.GetWriterLock())
             {
-                dictionary.Add(user.NumericId, newvm);
+                if (dictionary.ContainsKey(user.NumericId))
+                    dictionary[user.NumericId] = newvm;
+                else
+                    dictionary.Add(user.NumericId, newvm);
             }
             return newvm;
         }

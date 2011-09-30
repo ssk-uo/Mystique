@@ -53,7 +53,10 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
             if (user == null)
                 throw new NullReferenceException("user");
             this._backend = user;
+            this.BindingId = user.Id;
         }
+
+        public long BindingId { get; private set; }
 
         /// <summary>
         /// バックエンドをDBキャッシュを考慮して取得します。
@@ -79,12 +82,12 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         public override bool Equals(object obj)
         {
             var tvm = obj as UserViewModel;
-            return tvm != null && tvm.BackEnd.Id == this.BackEnd.Id;
+            return tvm != null && tvm.BindingId == this.BindingId;
         }
 
         public override int GetHashCode()
         {
-            return (int)this.BackEnd.Id;
+            return (int)this.BindingId;
         }
     }
 }

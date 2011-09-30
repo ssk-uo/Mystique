@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Dulcet.Twitter.Rest;
-using Inscribe.Common;
 using Inscribe.Authentication;
+using Inscribe.Common;
 using Inscribe.Storage;
 using Livet;
 
@@ -22,10 +22,11 @@ namespace Inscribe.ViewModels.Common
             {
                 var ud = UserStorage.Lookup(this._info.ScreenName);
                 if (ud != null)
-                    return ud.TwitterUser.ProfileImage;
+                    return new Uri(ud.BackEnd.ProfileImage);
                 else
                 {
-                    Task.Factory.StartNew(() => {
+                    Task.Factory.StartNew(() =>
+                    {
                         var info = ApiHelper.ExecApi(() => this._info.GetUserByScreenName(this._info.ScreenName));
                         if (info != null)
                         {

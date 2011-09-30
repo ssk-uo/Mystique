@@ -336,8 +336,8 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
 
         private void CreateUserTab(TabDependentTweetViewModel tvm, bool newColumn)
         {
-            var filter = new[] { new FilterUserId(tvm.Tweet.Status.User.NumericId) };
-            var desc = "@" + tvm.Tweet.Status.User.ScreenName;
+            var filter = new[] { new FilterUserId(tvm.Tweet.BackEnd.UserId) };
+            var desc = "@" + tvm.Tweet.ScreenName;
             if (newColumn)
             {
                 var column = tvm.Parent.Parent.Parent.CreateColumn();

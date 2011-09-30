@@ -41,7 +41,7 @@ namespace Inscribe.Subsystems
                         IssueNotification(
                             e.EventDescription.SourceUser,
                             e.EventDescription.TargetUser,
-                            e.EventDescription.SourceUser.TwitterUser.Bio,
+                            e.EventDescription.SourceUser.BackEnd.Bio,
                             EventKind.Follow);
                     break;
                 case EventKind.Mention:
@@ -80,15 +80,15 @@ namespace Inscribe.Subsystems
         private static bool CheckIsAllowed(TweetViewModel vm)
         {
             // データ破損
-            if (vm.Status == null || vm.Status.User == null)
+            if (vm.BackEnd == null)
                 return false;
             // ミュート対象
             if (Setting.Instance.TimelineFilteringProperty.MuteFilterCluster != null &&
-                Setting.Instance.TimelineFilteringProperty.MuteFilterCluster.Filter(vm.Status))
+                Setting.Instance.TimelineFilteringProperty.MuteFilterCluster.Filter(vm.BackEnd))
                 return false;
             // ブロック対象
             if (Setting.Instance.TimelineFilteringProperty.MuteBlockedUsers &&
-                AccountStorage.Accounts.Any(a => a.IsBlocking(vm.Status.User.NumericId)))
+                AccountStorage.Accounts.Any(a => a.IsBlocking(vm.BackEnd.UserId)))
                 return false;
             return true;
         }
@@ -126,7 +126,7 @@ namespace Inscribe.Subsystems
                     var notify = waitings[tweet];
                     waitings.Remove(tweet);
                     if (notify != null)
-                        IssueNotification(UserStorage.Get(tweet.Status.User), null, tweet.Status.Text, EventKind.Undefined, notify);
+                        IssueNotification(UserStorage.Lookup(tweet.BackEnd.UserId), null, tweet.BackEnd.Text, EventKind.Undefined, notify);
                 }
             }
         }

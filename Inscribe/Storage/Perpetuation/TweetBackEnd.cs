@@ -90,45 +90,5 @@ namespace Inscribe.Storage.Perpetuation
         public long[] FavoredUserIds { get; set; }
 
         public long[] InReplyFroms { get; set; }
-
-        public TweetViewModel Rebirth()
-        {
-            TwitterStatusBase tsb = null;
-            if (this.IsDirectMessage)
-            {
-                tsb = new TwitterDirectMessage()
-                {
-                    Id = this.Id,
-                    Text = this.Text,
-                    User = TransparentProxy.GetUser(this.UserId),
-                    CreatedAt = this.CreatedAt,
-                    Recipient = TransparentProxy.GetUser(this.DirectMessageReceipientId)
-                };
-            }
-            else
-            {
-                var rtos = TransparentProxy.GetTweetViewModel(this.RetweetedOriginalId);
-                tsb = new TwitterStatus()
-                {
-                    Id = this.Id,
-                    Text = this.Text,
-                    User = TransparentProxy.GetUser(this.UserId),
-                    CreatedAt = this.CreatedAt,
-                    Source = this.Source,
-                    InReplyToStatusId = this.InReplyToStatusId,
-                    InReplyToUserId = this.InReplyToUserId,
-                    InReplyToUserScreenName = this.InReplyToUserScreenName,
-                    RetweetedOriginal = rtos != null ? rtos.Status as TwitterStatus : null
-                };
-            }
-            var tvm = new TweetViewModel(tsb);
-            if (RetweetedUserIds != null)
-                tvm.RegisterRetweetedRangeUnsafe(RetweetedUserIds.Select(id => UserStorage.Get(TransparentProxy.GetUser(id))));
-            if (FavoredUserIds != null)
-                tvm.RegisterFavoredRangeUnsafe(FavoredUserIds.Select(id => UserStorage.Get(TransparentProxy.GetUser(id))));
-            if (InReplyFroms != null)
-                tvm.RegisterInReplyFromsUnsafe(InReplyFroms);
-            return tvm;
-        }
     }
 }

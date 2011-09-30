@@ -591,7 +591,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
       
         internal void NotifyNewTweetReceived(TimelineListCoreViewModel timelineListCoreViewModel, TimelineChild.TweetViewModel tweetViewModel)
         {
-            if (AccountStorage.Contains(tweetViewModel.Status.User.ScreenName) || !this.IsAlive)
+            if (AccountStorage.ContainsId(tweetViewModel.BackEnd.UserId) || !this.IsAlive)
                 return;
 
             // 正直謎設定だし、スタックトップTLの新着を伝えるってあんまり直感的じゃないから

@@ -19,7 +19,7 @@ namespace Inscribe.ViewModels.Dialogs
         public MuteViewModel(TweetViewModel tvm)
         {
             this._status = tvm;
-            this.MuteText = tvm.Status.Text;
+            this.MuteText = tvm.BackEnd.Text;
         }
 
         private string _muteText;
@@ -39,17 +39,13 @@ namespace Inscribe.ViewModels.Dialogs
         {
             get
             {
-                var st = this._status.Status as TwitterStatus;
-                if (st != null)
-                    return st.Source;
-                else
-                    return String.Empty;
+                return this._status.BackEnd.Source;
             }
         }
 
         public string UserScreenName
         {
-            get { return _status.Status.User.ScreenName; }
+            get { return _status.ScreenName; }
         }
 
         public enum NGKindTypes
@@ -105,7 +101,7 @@ namespace Inscribe.ViewModels.Dialogs
             // remove from krile
             Setting.Instance.TimelineFilteringProperty.MuteFilterCluster =
                 Setting.Instance.TimelineFilteringProperty.MuteFilterCluster.Join(this.GenerateConfiguredFilter());
-            TweetStorage.UpdateMute();
+            Setting.RaiseSettingValueChanged();
             this.Messenger.Raise(new WindowActionMessage("WindowAction", WindowAction.Close));
         }
         #endregion

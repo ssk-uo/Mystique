@@ -396,7 +396,7 @@ namespace Inscribe.ViewModels.PartBlocks.InputBlock
         {
             this._intelliSenseTextBoxViewModel.Items =
                 UserStorage.GetAll()
-                .Select(u => new IntelliSenseItemViewModel("@" + u.TwitterUser.ScreenName, u.TwitterUser.ProfileImage))
+                .Select(u => new IntelliSenseItemViewModel("@" + u.BackEnd.ScreenName, new Uri(u.BackEnd.ProfileImage)))
                 .Concat(HashtagStorage.GetHashtags()
                     .Select(s => new IntelliSenseItemViewModel("#" + s, null)))
                 .OrderBy(s => s.ItemText).ToArray();
@@ -430,14 +430,15 @@ namespace Inscribe.ViewModels.PartBlocks.InputBlock
             else
             {
                 // スクリーン名の取得
-                var screen = tweet.Status.User.ScreenName;
-                var sid = tweet.Status.Id;
-                var ts = tweet.Status as TwitterStatus;
+                var screen = tweet.ScreenName;
+                var sid = tweet.BindingId;
+                var be = tweet.BackEnd;
                 if (!Setting.Instance.InputExperienceProperty.OfficialRetweetInReplyToRetweeter && 
-                    ts != null && ts.RetweetedOriginal != null)
+                    be.RetweetedOriginalId != 0)
                 {
-                    screen = ts.RetweetedOriginal.User.ScreenName;
-                    sid = ts.RetweetedOriginal.Id;
+                    var ro = TweetStorage.Get(be.RetweetedOriginalId);
+                    screen = ro.ScreenName;
+                    sid = ro.BindingId;
                 }
                 if (this.CurrentInputDescription.InputText.StartsWith(".@"))
                 {
@@ -488,9 +489,11 @@ namespace Inscribe.ViewModels.PartBlocks.InputBlock
                 {
                     // single reply mode
                     this.CurrentInputDescription.InReplyToId = sid;
-                    if (tweet.Status is TwitterDirectMessage)
+                    if(be.IsDirectMessage)
                     {
-                        this.OverrideTarget(new[] { AccountStorage.Get(((TwitterDirectMessage)tweet.Status).Recipient.ScreenName) });
+                        var recp = UserStorage.Lookup(be.DirectMessageReceipientId);
+                        if (recp != null)
+                            this.OverrideTarget(new[] { AccountStorage.Get(recp.BackEnd.ScreenName) });
                         this.CurrentInputDescription.InputText = "d @" + screen + " ";
                         this.SetInputCaretIndex(this.CurrentInputDescription.InputText.Length);
                     }
@@ -513,9 +516,9 @@ namespace Inscribe.ViewModels.PartBlocks.InputBlock
                             this.CurrentInputDescription.InputText = "@" + screen + " ";
                             this.SetInputCaretIndex(this.CurrentInputDescription.InputText.Length);
                         }
-                        if (tweet.Status is TwitterStatus && AccountStorage.Contains(((TwitterStatus)tweet.Status).InReplyToUserScreenName))
+                        if (!be.IsDirectMessage && AccountStorage.Contains(be.InReplyToUserScreenName))
                         {
-                            this.OverrideTarget(new[] { AccountStorage.Get(((TwitterStatus)tweet.Status).InReplyToUserScreenName) });
+                            this.OverrideTarget(new[] { AccountStorage.Get(be.InReplyToUserScreenName) });
                         }
                     }
                 }

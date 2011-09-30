@@ -248,7 +248,7 @@ namespace Inscribe.Authentication
             {
                 try
                 {
-                    return this.UserViewModel.TwitterUser.ProfileImage;
+                    return new Uri(this.UserViewModel.BackEnd.ProfileImage);
                 }
                 catch { return null; }
             }
