@@ -5,14 +5,14 @@ using Dulcet.Twitter;
 namespace Inscribe.Storage.Perpetuation
 {
     [Table("UserTable")]
-    public class UserBackEnd
+    public class UserBackend
     {
         /// <summary>
         /// For deserialization
         /// </summary>
-        public UserBackEnd() { }
+        public UserBackend() { }
 
-        public UserBackEnd(TwitterUser user)
+        public UserBackend(TwitterUser user)
         {
             this.Id = user.NumericId;
             Overwrite(user);

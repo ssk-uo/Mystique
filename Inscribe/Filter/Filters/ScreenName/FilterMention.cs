@@ -15,7 +15,7 @@ namespace Inscribe.Filter.Filters.ScreenName
             this.needle = needle;
         }
 
-        protected override bool FilterStatus(TweetBackEnd status)
+        protected override bool FilterStatus(TweetBackend status)
         {
             return RegularExpressions.AtRegex.Matches(status.Text)
                 .Cast<Match>().Any(m => Match(m.Groups[1].Value, needle));

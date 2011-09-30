@@ -8,11 +8,11 @@ namespace Inscribe.Filter.Filters.Attributes
     {
         public FilterProtected() { }
 
-        protected override bool FilterStatus(TweetBackEnd status)
+        protected override bool FilterStatus(TweetBackend status)
         {
             var ud = UserStorage.Lookup(status.UserId);
             if (ud == null) return false;
-            return ud.BackEnd.IsProtected;
+            return ud.Backend.IsProtected;
         }
 
         public override string Identifier

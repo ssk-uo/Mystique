@@ -11,7 +11,7 @@ namespace Inscribe.Filter
         /// Negate値は考慮されます。
         /// </summary>
         /// <returns>フィルタを通過したか</returns>
-        bool Filter(TweetBackEnd backend);
+        bool Filter(TweetBackend backend);
 
         /// <summary>
         /// 否定条件であるか

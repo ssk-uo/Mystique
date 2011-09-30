@@ -5,7 +5,7 @@ namespace Inscribe.Filter.Filters.Attributes
 {
     public class FilterDirectMessage : FilterBase
     {
-        protected override bool FilterStatus(TweetBackEnd status)
+        protected override bool FilterStatus(TweetBackend status)
         {
             return status.IsDirectMessage;
         }

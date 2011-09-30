@@ -44,13 +44,13 @@ namespace Inscribe.Filter.Filters.Particular
 
         private int initCheckFlag = 0;
 
-        protected override bool FilterStatus(TweetBackEnd status)
+        protected override bool FilterStatus(TweetBackend status)
         {
             bool init = Interlocked.Exchange(ref initCheckFlag,1) == 0;
             if (ListStorage.IsListMemberCached(this.listUser, this.listName))
             {
                 var ids = ListStorage.GetListMembers(this.listUser, this.listName)
-                    .Select(u => u.BackEnd.Id).ToArray();
+                    .Select(u => u.Backend.Id).ToArray();
                 return ids.Contains(status.UserId) &&
                     (status.IsDirectMessage ||
                     status.InReplyToUserId == 0 ||

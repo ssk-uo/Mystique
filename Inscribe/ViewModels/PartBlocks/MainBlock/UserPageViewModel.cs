@@ -55,7 +55,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
             {
                 if (value == null ?
                     _user == null :
-                    _user != null && _user.BackEnd.ScreenName == value.BackEnd.ScreenName)
+                    _user != null && _user.Backend.ScreenName == value.Backend.ScreenName)
                     return;
                 _user = value;
                 RaisePropertyChanged(() => User);
@@ -92,7 +92,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? new Uri(User.BackEnd.ProfileImage) : null;
+                return User != null ? new Uri(User.Backend.ProfileImage) : null;
             }
         }
 
@@ -100,7 +100,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.BackEnd.ScreenName : String.Empty;
+                return User != null ? User.Backend.ScreenName : String.Empty;
             }
         }
 
@@ -108,7 +108,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.BackEnd.UserName : String.Empty;
+                return User != null ? User.Backend.UserName : String.Empty;
             }
         }
 
@@ -116,7 +116,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null && User.BackEnd.IsVerified;
+                return User != null && User.Backend.IsVerified;
             }
         }
 
@@ -124,7 +124,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null && User.BackEnd.IsProtected;
+                return User != null && User.Backend.IsProtected;
             }
         }
 
@@ -132,7 +132,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.BackEnd.Location : String.Empty;
+                return User != null ? User.Backend.Location : String.Empty;
             }
         }
 
@@ -140,7 +140,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.BackEnd.Web : String.Empty;
+                return User != null ? User.Backend.Web : String.Empty;
             }
         }
 
@@ -160,9 +160,9 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         private void OpenLink(string parameter)
         {
             if (String.IsNullOrEmpty(parameter))
-                Browser.Start("http://twitter.com/" + User.BackEnd.ScreenName);
+                Browser.Start("http://twitter.com/" + User.Backend.ScreenName);
             else
-                Browser.Start("http://twitter.com/" + User.BackEnd.ScreenName + "/" + parameter);
+                Browser.Start("http://twitter.com/" + User.Backend.ScreenName + "/" + parameter);
         }
         #endregion
 
@@ -181,8 +181,8 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
 
         private void OpenUserWeb()
         {
-            if (User != null && User.BackEnd.Web != null)
-                Browser.Start(User.BackEnd.Web);
+            if (User != null && User.Backend.Web != null)
+                Browser.Start(User.Backend.Web);
         }
         #endregion
 
@@ -190,7 +190,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.BackEnd.Bio : String.Empty;
+                return User != null ? User.Backend.Bio : String.Empty;
             }
         }
 
@@ -198,7 +198,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.BackEnd.Tweets.ToString() : null;
+                return User != null ? User.Backend.Tweets.ToString() : null;
             }
         }
 
@@ -206,7 +206,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.BackEnd.Favorites.ToString() : String.Empty;
+                return User != null ? User.Backend.Favorites.ToString() : String.Empty;
             }
         }
 
@@ -236,7 +236,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.BackEnd.Followings.ToString() : null;
+                return User != null ? User.Backend.Followings.ToString() : null;
             }
         }
 
@@ -244,7 +244,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.BackEnd.Followers.ToString() : null;
+                return User != null ? User.Backend.Followers.ToString() : null;
             }
         }
 
@@ -252,7 +252,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             get
             {
-                return User != null ? User.BackEnd.Listed.ToString() : null;
+                return User != null ? User.Backend.Listed.ToString() : null;
             }
         }
 
@@ -271,9 +271,9 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
 
         private void CreateUserTab()
         {
-            var desc = "@" + this.User.BackEnd.ScreenName;
+            var desc = "@" + this.User.Backend.ScreenName;
             var filt = new[]{ new FilterCluster(){
-                 Filters = new[]{new FilterUserId(this.User.BackEnd.Id)}}};
+                 Filters = new[]{new FilterUserId(this.User.Backend.Id)}}};
 
             switch (Setting.Instance.TimelineExperienceProperty.UserOpenTransition)
             {
@@ -328,7 +328,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
                 }
                 catch (Exception e)
                 {
-                    ExceptionStorage.Register(e, ExceptionCategory.TwitterError, "ユーザータイムラインを受信できませんでした: @" + this.User.BackEnd.ScreenName, ReceiveTimeline);
+                    ExceptionStorage.Register(e, ExceptionCategory.TwitterError, "ユーザータイムラインを受信できませんでした: @" + this.User.Backend.ScreenName, ReceiveTimeline);
                 }
                 finally
                 {

@@ -38,7 +38,7 @@ namespace Inscribe.ViewModels.PartBlocks.InputBlock
                 if (tvm == null)
                     return "[undefined]";
                 else
-                    return "@" + tvm.ScreenName + ": " + tvm.BackEnd.Text;
+                    return "@" + tvm.ScreenName + ": " + tvm.Backend.Text;
             }
         }
 

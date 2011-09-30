@@ -14,7 +14,7 @@ namespace Inscribe.Filter.Filters.Text
             this.isCaseSensitive = isCaseSensitive;
         }
 
-        protected override bool FilterStatus(TweetBackEnd status)
+        protected override bool FilterStatus(TweetBackend status)
         {
             return this.Match(status.Text, this.needle, this.isCaseSensitive);
         }

@@ -248,7 +248,7 @@ namespace Inscribe.Authentication
             {
                 try
                 {
-                    return new Uri(this.UserViewModel.BackEnd.ProfileImage);
+                    return new Uri(this.UserViewModel.Backend.ProfileImage);
                 }
                 catch { return null; }
             }

@@ -83,7 +83,7 @@ namespace Inscribe.Filter
         /// </summary>
         /// <param name="status">フィルタテストするステータス</param>
         /// <returns>ステータスがフィルタに合致するか</returns>
-        public bool Filter(TweetBackEnd status)
+        public bool Filter(TweetBackend status)
         {
             if (_filters != null)
             {

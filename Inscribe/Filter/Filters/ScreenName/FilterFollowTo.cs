@@ -12,7 +12,7 @@ namespace Inscribe.Filter.Filters.ScreenName
             this.needle = needle;
         }
 
-        protected override bool FilterStatus(TweetBackEnd status)
+        protected override bool FilterStatus(TweetBackend status)
         {
             return AccountStorage.Accounts.Where(i => Match(i.ScreenName, needle))
                 .Any(i => i.IsFollowedBy(status.UserId));

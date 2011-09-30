@@ -30,7 +30,7 @@ namespace Inscribe.Filter.Filters.ScreenName
             this.acceptBlocking = acceptBlocking;
         }
 
-        protected override bool FilterStatus(TweetBackEnd status)
+        protected override bool FilterStatus(TweetBackend status)
         {
             if (status.IsDirectMessage || status.RetweetedOriginalId != 0)
             {
@@ -44,7 +44,7 @@ namespace Inscribe.Filter.Filters.ScreenName
                     .Any(i => i.IsFollowing(status.UserId)) &&
                     (rtd == null ||
                     AccountStorage.Accounts.Where(i => Match(i.ScreenName, needle))
-                    .All(i => i.IsBlocking(rtd.BackEnd.UserId)));
+                    .All(i => i.IsBlocking(rtd.Backend.UserId)));
             }
         }
 

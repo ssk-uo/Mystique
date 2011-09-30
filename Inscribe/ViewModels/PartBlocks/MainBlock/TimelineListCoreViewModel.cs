@@ -195,7 +195,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
             {
                 if (!viewModel.IsStatusInfoContains) return false;
                 return (this.sources ?? this.Parent.TabProperty.TweetSources ?? new IFilter[0])
-                    .Any(f => f.Filter(viewModel.BackEnd));
+                    .Any(f => f.Filter(viewModel.Backend));
             }
             catch (Exception ex)
             {

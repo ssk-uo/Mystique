@@ -16,11 +16,11 @@ namespace Inscribe.Filter.Filters.Text
         }
 
 
-        protected override bool FilterStatus(TweetBackEnd status)
+        protected override bool FilterStatus(TweetBackend status)
         {
             var ud = UserStorage.Lookup(status.UserId);
             if (ud == null) return false;
-            return this.Match(ud.BackEnd.UserName, this.needle, this.isCaseSensitive);
+            return this.Match(ud.Backend.UserName, this.needle, this.isCaseSensitive);
         }
 
         public override string Identifier

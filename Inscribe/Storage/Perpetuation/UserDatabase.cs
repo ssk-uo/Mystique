@@ -10,6 +10,6 @@ namespace Inscribe.Storage.Perpetuation
     {
         internal UserDatabase(string cstr) : base(cstr) { }
 
-        public IDbSet<UserBackEnd> UserSet { get; set; }
+        public IDbSet<UserBackend> UserSet { get; set; }
     }
 }

@@ -83,7 +83,7 @@ namespace Inscribe.Storage
             if (AccountStorage.ContainsId(retweeter.BindingId) || tweet.CreatedAt < wakeupTime)
                 return;
             Register(new EventDescription(EventKind.Retweet, retweeter,
-                    UserStorage.Lookup(tweet.BackEnd.UserId), tweet));
+                    UserStorage.Lookup(tweet.Backend.UserId), tweet));
         }
 
         public static void OnFavored(TweetViewModel tweet, UserViewModel favorer)
@@ -91,7 +91,7 @@ namespace Inscribe.Storage
             if (AccountStorage.ContainsId(favorer.BindingId))
                 return;
             Register(new EventDescription(EventKind.Favorite, favorer,
-                 UserStorage.Lookup(tweet.BackEnd.UserId), tweet));
+                 UserStorage.Lookup(tweet.Backend.UserId), tweet));
         }
 
         public static void OnUnfavored(TweetViewModel tweet, UserViewModel favorer)
@@ -99,7 +99,7 @@ namespace Inscribe.Storage
             if (AccountStorage.ContainsId(favorer.BindingId))
                 return;
             Register(new EventDescription(EventKind.Unfavorite,
-                favorer, UserStorage.Lookup(tweet.BackEnd.UserId), tweet));
+                favorer, UserStorage.Lookup(tweet.Backend.UserId), tweet));
         }
 
         public static void OnFollowed(UserViewModel fromUser, UserViewModel toUser)
@@ -116,18 +116,18 @@ namespace Inscribe.Storage
 
         public static void OnMention(TweetViewModel tweet)
         {
-            if (AccountStorage.ContainsId(tweet.BackEnd.UserId) || tweet.CreatedAt < wakeupTime)
+            if (AccountStorage.ContainsId(tweet.Backend.UserId) || tweet.CreatedAt < wakeupTime)
                 return;
             Register(new EventDescription(EventKind.Mention,
-                UserStorage.Lookup(tweet.BackEnd.UserId), null, tweet));
+                UserStorage.Lookup(tweet.Backend.UserId), null, tweet));
         }
 
         public static void OnDirectMessage(TweetViewModel tweet)
         {
-            if (AccountStorage.ContainsId(tweet.BackEnd.UserId) || tweet.CreatedAt < wakeupTime)
+            if (AccountStorage.ContainsId(tweet.Backend.UserId) || tweet.CreatedAt < wakeupTime)
                 return;
             Register(new EventDescription(EventKind.DirectMessage,
-                UserStorage.Lookup(tweet.BackEnd.UserId), null, tweet));
+                UserStorage.Lookup(tweet.Backend.UserId), null, tweet));
         }
     }
 

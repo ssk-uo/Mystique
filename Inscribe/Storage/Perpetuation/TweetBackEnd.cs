@@ -10,14 +10,14 @@ namespace Inscribe.Storage.Perpetuation
     /// SQL Server Compact に格納するためのツイートデータ
     /// </summary>
     [Table("TweetTable")]
-    public class TweetBackEnd
+    public class TweetBackend
     {
         /// <summary>
         /// For deserialization
         /// </summary>
-        public TweetBackEnd() { }
+        public TweetBackend() { }
 
-        public TweetBackEnd(TwitterStatusBase tsb)
+        public TweetBackend(TwitterStatusBase tsb)
         {
             this.Id = tsb.Id;
             this.Text = tsb.Text;

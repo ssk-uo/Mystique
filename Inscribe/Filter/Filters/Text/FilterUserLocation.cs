@@ -15,11 +15,11 @@ namespace Inscribe.Filter.Filters.Text
             this.isCaseSensitive = isCaseSensitive;
         }
 
-        protected override bool FilterStatus(TweetBackEnd status)
+        protected override bool FilterStatus(TweetBackend status)
         {
             var ud = UserStorage.Lookup(status.UserId);
             if (ud == null) return false;
-            return this.Match(ud.BackEnd.Location, this.needle, this.isCaseSensitive);
+            return this.Match(ud.Backend.Location, this.needle, this.isCaseSensitive);
         }
 
         public override string Identifier

@@ -15,12 +15,12 @@ namespace Inscribe.Filter
         /// フィルタを適用します。
         /// </summary>
         /// <returns>フィルタを通過したか</returns>
-        public bool Filter(TweetBackEnd status)
+        public bool Filter(TweetBackend status)
         {
             return FilterStatus(status) == !Negate;
         }
 
-        protected abstract bool FilterStatus(TweetBackEnd status);
+        protected abstract bool FilterStatus(TweetBackend status);
 
         /// <summary>
         /// 現在適用中のフィルタを破棄し、フィルタを再適用するように要求されました。

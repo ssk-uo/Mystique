@@ -16,11 +16,11 @@ namespace Inscribe.Filter.Filters.ScreenName
             this.needle = needle;
         }
 
-        protected override bool FilterStatus(TweetBackEnd status)
+        protected override bool FilterStatus(TweetBackend status)
         {
             var ud = UserStorage.Lookup(status.UserId);
             if (ud == null) return false;
-            return Match(ud.BackEnd.ScreenName, needle);
+            return Match(ud.Backend.ScreenName, needle);
         }
 
         public override string Identifier

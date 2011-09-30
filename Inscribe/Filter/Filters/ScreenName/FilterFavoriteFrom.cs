@@ -13,11 +13,11 @@ namespace Inscribe.Filter.Filters.ScreenName
             this.needle = needle;
         }
 
-        protected override bool FilterStatus(TweetBackEnd status)
+        protected override bool FilterStatus(TweetBackend status)
         {
             var vm = TweetStorage.Get(status.Id);
             if (vm == null) return false;
-            return vm.FavoredUsers.Any(u => Match(u.BackEnd.ScreenName, needle));
+            return vm.FavoredUsers.Any(u => Match(u.Backend.ScreenName, needle));
         }
 
         public override string Identifier

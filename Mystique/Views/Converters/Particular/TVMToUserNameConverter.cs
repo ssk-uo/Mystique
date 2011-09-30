@@ -60,10 +60,10 @@ namespace Mystique.Views.Converters.Particular
                             return ScreenName(input) + " (" + UserName(input) + ")";
                     }
                 case UserNameViewKind.DirectMessageTarget:
-                    if (input == null || !input.BackEnd.IsDirectMessage)
+                    if (input == null || !input.Backend.IsDirectMessage)
                         return String.Empty;
-                    var recp = UserStorage.Lookup(input.BackEnd.DirectMessageReceipientId);
-                    return recp != null ? recp.BackEnd.ScreenName : String.Empty;
+                    var recp = UserStorage.Lookup(input.Backend.DirectMessageReceipientId);
+                    return recp != null ? recp.Backend.ScreenName : String.Empty;
 
                 default:
                     return String.Empty;
@@ -73,13 +73,13 @@ namespace Mystique.Views.Converters.Particular
         private string UserName(TweetViewModel status)
         {
             if (status == null) return String.Empty;
-            return TwitterHelper.GetSuggestedUser(status).BackEnd.UserName ?? String.Empty;
+            return TwitterHelper.GetSuggestedUser(status).Backend.UserName ?? String.Empty;
         }
 
         private string ScreenName(TweetViewModel status)
         {
             if (status == null) return String.Empty;
-            return TwitterHelper.GetSuggestedUser(status).BackEnd.ScreenName ?? String.Empty;
+            return TwitterHelper.GetSuggestedUser(status).Backend.ScreenName ?? String.Empty;
         }
     }
 }

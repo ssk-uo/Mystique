@@ -44,7 +44,7 @@ namespace Inscribe.Storage.Perpetuation
             }
         }
 
-        internal static TweetBackEnd GetTweetBackEnd(long id)
+        internal static TweetBackend GetTweetBackEnd(long id)
         {
             lock (tdblock)
             {
@@ -64,7 +64,7 @@ namespace Inscribe.Storage.Perpetuation
             }
         }
 
-        internal static UserBackEnd GetUserBackEnd(long id)
+        internal static UserBackend GetUserBackEnd(long id)
         {
             lock (tdblock)
             {

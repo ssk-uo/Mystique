@@ -58,7 +58,7 @@ namespace Inscribe.ViewModels.Dialogs.Common
         {
             get
             {
-                return new Uri(Target.BackEnd.ProfileImage);
+                return new Uri(Target.Backend.ProfileImage);
             }
         }
 
@@ -66,7 +66,7 @@ namespace Inscribe.ViewModels.Dialogs.Common
         {
             get
             {
-                return Target.BackEnd.ScreenName;
+                return Target.Backend.ScreenName;
             }
         }
 
@@ -77,7 +77,7 @@ namespace Inscribe.ViewModels.Dialogs.Common
             {
                 if (_relations == null)
                     _relations = AccountStorage.Accounts
-                        .Where(e => e.ScreenName != Target.BackEnd.ScreenName)
+                        .Where(e => e.ScreenName != Target.Backend.ScreenName)
                         .Select(a => new Relation(a, Target)).ToList();
                 return _relations;
             }
@@ -180,7 +180,7 @@ namespace Inscribe.ViewModels.Dialogs.Common
         public void CommitRelation()
         {
             if (OrigState == State || !IsStandby) return;
-            var id = TargetUser.BackEnd.Id;
+            var id = TargetUser.Backend.Id;
             try
             {
                 switch (State)

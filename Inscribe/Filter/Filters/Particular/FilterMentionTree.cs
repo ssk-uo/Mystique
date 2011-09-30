@@ -55,11 +55,11 @@ namespace Inscribe.Filter.Filters.Particular
                     RaiseRequireReaccept();
                     return;
                 }
-                if (tweet.BackEnd.InReplyToStatusId != 0)
+                if (tweet.Backend.InReplyToStatusId != 0)
                 {
-                    this.tracePoint = tweet.BackEnd.InReplyToStatusId;
+                    this.tracePoint = tweet.Backend.InReplyToStatusId;
                     RaisePartialRequireReaccept(tweet.BindingId);
-                    RecursiveCheckId(tweet.BackEnd.InReplyToStatusId);
+                    RecursiveCheckId(tweet.Backend.InReplyToStatusId);
                     tweet.RefreshInReplyToInfo(); // 返信情報の更新を通知
                 }
                 else
@@ -87,7 +87,7 @@ namespace Inscribe.Filter.Filters.Particular
                             var vm = TweetStorage.Register(status);
                             Task.Factory.StartNew(() => RecursiveCheckId(status.Id));
                             Task.Factory.StartNew(() =>
-                                TweetStorage.GetAll(tvm => tvm.BackEnd.InReplyToStatusId == id)
+                                TweetStorage.GetAll(tvm => tvm.Backend.InReplyToStatusId == id)
                                     .ForEach(tvm => tvm.RefreshInReplyToInfo()));
                         }
                         else
@@ -105,7 +105,7 @@ namespace Inscribe.Filter.Filters.Particular
             }
         }
 
-        protected override bool FilterStatus(TweetBackEnd status)
+        protected override bool FilterStatus(TweetBackend status)
         {
             return TraceId(status.Id);
         }
@@ -117,10 +117,10 @@ namespace Inscribe.Filter.Filters.Particular
                 return false;
             if (vm.BindingId == tracePoint)
                 return true;
-            if (vm.BackEnd.InReplyToStatusId == 0)
+            if (vm.Backend.InReplyToStatusId == 0)
                 return false;
             else
-                return TraceId(vm.BackEnd.InReplyToStatusId);
+                return TraceId(vm.Backend.InReplyToStatusId);
         }
 
         public override string Identifier

@@ -22,7 +22,7 @@ namespace Mystique.Views.Converters.Particular
                     return ScreenName(input);
                 case UserNameViewKind.RetweetedScreenName:
                     if (input == null) return String.Empty;
-                    return input.BackEnd.ScreenName;
+                    return input.Backend.ScreenName;
                 case UserNameViewKind.ViewName:
                     switch (Setting.Instance.TweetExperienceProperty.UserNameViewMode)
                     {
@@ -52,12 +52,12 @@ namespace Mystique.Views.Converters.Particular
 
         private static string UserName(UserViewModel user)
         {
-            return user.BackEnd.UserName;
+            return user.Backend.UserName;
         }
 
         private static string ScreenName(UserViewModel user)
         {
-            return user.BackEnd.ScreenName;
+            return user.Backend.ScreenName;
         }
     }
 }

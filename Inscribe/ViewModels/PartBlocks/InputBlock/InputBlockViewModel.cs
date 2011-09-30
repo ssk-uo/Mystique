@@ -396,7 +396,7 @@ namespace Inscribe.ViewModels.PartBlocks.InputBlock
         {
             this._intelliSenseTextBoxViewModel.Items =
                 UserStorage.GetAll()
-                .Select(u => new IntelliSenseItemViewModel("@" + u.BackEnd.ScreenName, new Uri(u.BackEnd.ProfileImage)))
+                .Select(u => new IntelliSenseItemViewModel("@" + u.Backend.ScreenName, new Uri(u.Backend.ProfileImage)))
                 .Concat(HashtagStorage.GetHashtags()
                     .Select(s => new IntelliSenseItemViewModel("#" + s, null)))
                 .OrderBy(s => s.ItemText).ToArray();
@@ -432,7 +432,7 @@ namespace Inscribe.ViewModels.PartBlocks.InputBlock
                 // スクリーン名の取得
                 var screen = tweet.ScreenName;
                 var sid = tweet.BindingId;
-                var be = tweet.BackEnd;
+                var be = tweet.Backend;
                 if (!Setting.Instance.InputExperienceProperty.OfficialRetweetInReplyToRetweeter && 
                     be.RetweetedOriginalId != 0)
                 {
@@ -493,7 +493,7 @@ namespace Inscribe.ViewModels.PartBlocks.InputBlock
                     {
                         var recp = UserStorage.Lookup(be.DirectMessageReceipientId);
                         if (recp != null)
-                            this.OverrideTarget(new[] { AccountStorage.Get(recp.BackEnd.ScreenName) });
+                            this.OverrideTarget(new[] { AccountStorage.Get(recp.Backend.ScreenName) });
                         this.CurrentInputDescription.InputText = "d @" + screen + " ";
                         this.SetInputCaretIndex(this.CurrentInputDescription.InputText.Length);
                     }

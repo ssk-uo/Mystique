@@ -7,7 +7,7 @@ namespace Inscribe.Filter.Filters.Attributes
     {
         public FilterRetweeted() { }
 
-        protected override bool FilterStatus(TweetBackEnd status)
+        protected override bool FilterStatus(TweetBackend status)
         {
             return status.RetweetedOriginalId != 0;
         }

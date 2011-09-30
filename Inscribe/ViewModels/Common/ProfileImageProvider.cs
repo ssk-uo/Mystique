@@ -22,7 +22,7 @@ namespace Inscribe.ViewModels.Common
             {
                 var ud = UserStorage.Lookup(this._info.ScreenName);
                 if (ud != null)
-                    return new Uri(ud.BackEnd.ProfileImage);
+                    return new Uri(ud.Backend.ProfileImage);
                 else
                 {
                     Task.Factory.StartNew(() =>

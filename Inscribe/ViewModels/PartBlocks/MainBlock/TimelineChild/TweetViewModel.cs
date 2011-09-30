@@ -21,7 +21,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
     {
         #region Backend services
 
-        private TweetBackEnd _backend;
+        private TweetBackend _backend;
         /// <summary>
         /// バックエンドをそのまま参照します。<para />
         /// NULLが戻ることがあります。
@@ -30,7 +30,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         /// このプロパティにバインドしないでください。<para />
         /// 適切な変更通知を受け取れない可能性があります。
         /// </remarks>
-        public TweetBackEnd BackEndCache
+        public TweetBackend BackendCache
         {
             get
             {
@@ -44,12 +44,12 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
             get { return _backend != null; }
         }
 
-        internal void SetBackEnd(TweetBackEnd backend)
+        internal void SetBackEnd(TweetBackend backend)
         {
             this._backend = backend;
             this._lastReference = DateTime.Now;
             this._backendIsGenerated = true;
-            RaisePropertyChanged(() => BackEnd);
+            RaisePropertyChanged(() => Backend);
         }
 
         internal void ReleaseBackend()
@@ -70,11 +70,11 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         /// <summary>
         /// バックエンドをDBキャッシュを考慮して取得します。
         /// </summary>
-        public TweetBackEnd BackEnd
+        public TweetBackend Backend
         {
             get
             {
-                var bec = this.BackEndCache;
+                var bec = this.BackendCache;
                 if (bec != null || !_backendIsGenerated)
                 {
                     // バックエンドがまだ生きているか、もしくはそもそも存在していない
@@ -84,14 +84,14 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
                 {
                     // DBから取得
                     throw new NotImplementedException();
-                    RaisePropertyChanged(() => BackEnd);
+                    RaisePropertyChanged(() => Backend);
                 }
             }
         }
 
         #endregion
 
-        public TweetViewModel(TweetBackEnd backend)
+        public TweetViewModel(TweetBackend backend)
         {
             if (backend == null)
                 throw new ArgumentException("backend");
@@ -113,7 +113,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         /// </summary>
         public bool IsStatusInfoContains
         {
-            get { return this.BackEnd != null; }
+            get { return this.Backend != null; }
         }
 
         /// <summary>
@@ -124,9 +124,9 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
             get
             {
                 var status = this;
-                if (status.BackEnd.RetweetedOriginalId != 0)
-                    status = TweetStorage.Get(status.BackEnd.RetweetedOriginalId, true);
-                return status.BackEnd.Text;
+                if (status.Backend.RetweetedOriginalId != 0)
+                    status = TweetStorage.Get(status.Backend.RetweetedOriginalId, true);
+                return status.Backend.Text;
             }
         }
 
@@ -134,7 +134,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         public UserViewModel UserViewModel
         {
-            get { return UserStorage.Lookup(this.BackEnd.UserId); }
+            get { return UserStorage.Lookup(this.Backend.UserId); }
         }
 
         public string ScreenName
@@ -145,7 +145,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
                 if (uvm == null)
                     return String.Empty;
                 else
-                    return uvm.BackEnd.ScreenName;
+                    return uvm.Backend.ScreenName;
             }
         }
 
@@ -157,7 +157,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
                 if (uvm == null)
                     return null;
                 else
-                    return new Uri(uvm.BackEnd.ProfileImage);
+                    return new Uri(uvm.Backend.ProfileImage);
             }
         }
 
@@ -165,13 +165,13 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         {
             get
             {
-                if (BackEnd.IsDirectMessage)
+                if (Backend.IsDirectMessage)
                 {
-                    var uvm = UserStorage.Lookup(BackEnd.DirectMessageReceipientId);
+                    var uvm = UserStorage.Lookup(Backend.DirectMessageReceipientId);
                     if (uvm == null)
                         return null;
                     else
-                        return new Uri(uvm.BackEnd.ProfileImage);
+                        return new Uri(uvm.Backend.ProfileImage);
                 }
                 else
                 {
@@ -186,7 +186,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         /// </summary>
         public string Text
         {
-            get { return this.BackEnd.Text; }
+            get { return this.Backend.Text; }
         }
 
         /// <summary>
@@ -198,7 +198,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
             {
                 var uvm = UserViewModel;
                 if (uvm == null) return string.Empty;
-                return "http://twitter.com/" + this.ScreenName + "/status/" + this.BackEnd.Id.ToString();
+                return "http://twitter.com/" + this.ScreenName + "/status/" + this.Backend.Id.ToString();
             }
         }
 
@@ -331,7 +331,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         public void SettingValueChanged()
         {
-            RaisePropertyChanged(() => BackEnd);
+            RaisePropertyChanged(() => Backend);
             RaisePropertyChanged(() => NameAreaWidth);
         }
 
@@ -360,29 +360,29 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         public bool IsProtected
         {
-            get { return TwitterHelper.GetSuggestedUser(this).BackEnd.IsProtected; }
+            get { return TwitterHelper.GetSuggestedUser(this).Backend.IsProtected; }
         }
 
         public bool IsVerified
         {
-            get { return TwitterHelper.GetSuggestedUser(this).BackEnd.IsVerified; }
+            get { return TwitterHelper.GetSuggestedUser(this).Backend.IsVerified; }
         }
 
         public bool IsStatus
         {
-            get { return !this.BackEnd.IsDirectMessage; }
+            get { return !this.Backend.IsDirectMessage; }
         }
 
         public bool IsDirectMessage
         {
-            get { return this.BackEnd.IsDirectMessage; }
+            get { return this.Backend.IsDirectMessage; }
         }
 
         public bool IsMention
         {
             get
             {
-                return this.BackEnd.InReplyToStatusId != 0;
+                return this.Backend.InReplyToStatusId != 0;
             }
         }
 
@@ -414,13 +414,13 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         {
             get
             {
-                if (this.BackEnd.InReplyToStatusId != 0)
+                if (this.Backend.InReplyToStatusId != 0)
                 {
-                    var tweet = TweetStorage.Get(this.BackEnd.InReplyToStatusId);
+                    var tweet = TweetStorage.Get(this.Backend.InReplyToStatusId);
                     if (tweet == null || !tweet.IsStatusInfoContains)
                         return "受信していません";
                     else
-                        return "@" + tweet.ScreenName + ": " + tweet.BackEnd.Text;
+                        return "@" + tweet.ScreenName + ": " + tweet.Backend.Text;
                 }
                 else
                 {
@@ -462,8 +462,8 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         {
             get
             {
-                var ud = UserStorage.Lookup(this.BackEnd.UserId);
-                return ud != null && AccountStorage.Get(ud.BackEnd.ScreenName) != null;
+                var ud = UserStorage.Lookup(this.Backend.UserId);
+                return ud != null && AccountStorage.Get(ud.Backend.ScreenName) != null;
             }
         }
 
@@ -471,10 +471,10 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         {
             get
             {
-                if (this.BackEnd == null)
+                if (this.Backend == null)
                     return DateTime.MinValue;
                 else
-                    return this.BackEnd.CreatedAt;
+                    return this.Backend.CreatedAt;
             }
         }
 
@@ -497,7 +497,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         private void CopySTOT()
         {
-            CopyClipboard(TwitterHelper.GetSuggestedUser(this).BackEnd.ScreenName + ":" +
+            CopyClipboard(TwitterHelper.GetSuggestedUser(this).Backend.ScreenName + ":" +
                 this.TweetText + " [" + this.Permalink + "]");
 
         }
@@ -537,7 +537,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         private void CopyScreenName()
         {
-            CopyClipboard(TwitterHelper.GetSuggestedUser(this).BackEnd.ScreenName);
+            CopyClipboard(TwitterHelper.GetSuggestedUser(this).Backend.ScreenName);
         }
         #endregion
 

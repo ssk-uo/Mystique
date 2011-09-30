@@ -82,7 +82,7 @@ namespace Inscribe.Communication.Posting
                 var uid = info.Id;
                 var originate = TweetStorage.GetAll(
                     t => t.BindingId == uid && DateTime.Now.Subtract(t.CreatedAt) < TwitterDefine.UnderControlTimespan)
-                    .OrderByDescending((t) => t.BackEnd.CreatedAt)
+                    .OrderByDescending((t) => t.Backend.CreatedAt)
                     .Skip(TwitterDefine.UnderControlCount - 1)
                     .FirstOrDefault();
 
@@ -90,7 +90,7 @@ namespace Inscribe.Communication.Posting
                 {
                     originate = TweetStorage.GetAll(
                         t => t.BindingId == uid && DateTime.Now.Subtract(t.CreatedAt) < TwitterDefine.UnderControlTimespan)
-                        .OrderByDescending((t) => t.BackEnd.CreatedAt)
+                        .OrderByDescending((t) => t.Backend.CreatedAt)
                         .LastOrDefault();
                 }
 
@@ -100,7 +100,7 @@ namespace Inscribe.Communication.Posting
                 }
                 else
                 {
-                    var release = (originate.BackEnd.CreatedAt + TwitterDefine.UnderControlTimespan);
+                    var release = (originate.Backend.CreatedAt + TwitterDefine.UnderControlTimespan);
                     NotifyStorage.Notify("[規制管理: @" + info.ScreenName +
                         " はPOST規制されています。解除予想時刻は " + release.ToString("HH:mm:ss") + " です。]");
                     underControls.AddOrUpdate(info, release);
@@ -166,7 +166,7 @@ namespace Inscribe.Communication.Posting
             var uid = info.Id;
             // とりあえずこのユーザーの全ツイートを持ってくる
             var times = TweetStorage.GetAll(t => t.BindingId == uid)
-                .Select(t => t.BackEnd.CreatedAt)
+                .Select(t => t.Backend.CreatedAt)
                 .OrderByDescending(t => t) // 新着順に並べる
                 .ToArray();
 
@@ -331,7 +331,7 @@ namespace Inscribe.Communication.Posting
 
         private static void FavTweetSink(IEnumerable<AccountInfo> infos, TweetViewModel status)
         {
-            var be = status.BackEnd;
+            var be = status.Backend;
             if(be.IsDirectMessage)
             {
                 NotifyStorage.Notify("DirectMessageはFavできません。");
@@ -372,7 +372,7 @@ namespace Inscribe.Communication.Posting
                     }
                 });
             if (success)
-                NotifyStorage.Notify("Favしました: @" + status.ScreenName + ": " + status.BackEnd.Text);
+                NotifyStorage.Notify("Favしました: @" + status.ScreenName + ": " + status.Backend.Text);
         }
 
         private static void FavTweetCore(AccountInfo d, TweetViewModel status)
@@ -400,7 +400,7 @@ namespace Inscribe.Communication.Posting
 
         private static void UnfavTweetSink(IEnumerable<AccountInfo> infos, TweetViewModel status)
         {
-            var be = status.BackEnd;
+            var be = status.Backend;
             if (be.IsDirectMessage)
             {
                 NotifyStorage.Notify("DirectMessageはUnfavできません。");
@@ -441,7 +441,7 @@ namespace Inscribe.Communication.Posting
                     }
                 });
             if (success)
-                NotifyStorage.Notify("Unfavしました: @" + status.ScreenName + ": " + status.BackEnd.Text);
+                NotifyStorage.Notify("Unfavしました: @" + status.ScreenName + ": " + status.Backend.Text);
         }
 
         private static void UnfavTweetCore(AccountInfo d, TweetViewModel status)
@@ -469,7 +469,7 @@ namespace Inscribe.Communication.Posting
 
         private static void RetweetSink(IEnumerable<AccountInfo> infos, TweetViewModel status)
         {
-            var be = status.BackEnd;
+            var be = status.Backend;
             if (be.IsDirectMessage)
             {
                 NotifyStorage.Notify("DirectMessageはRetweetできません。");
@@ -508,7 +508,7 @@ namespace Inscribe.Communication.Posting
                     }
                 });
             if (success)
-                NotifyStorage.Notify("Retweetしました: @" + status.ScreenName + ": " + status.BackEnd.Text);
+                NotifyStorage.Notify("Retweetしました: @" + status.ScreenName + ": " + status.Backend.Text);
         }
 
         private static void RetweetCore(AccountInfo d, AccountInfo origin, TweetViewModel status)
@@ -547,7 +547,7 @@ namespace Inscribe.Communication.Posting
 
         private static void UnretweetSink(IEnumerable<AccountInfo> infos, TweetViewModel status)
         {
-            var be = status.BackEnd;
+            var be = status.Backend;
             if (be.IsDirectMessage)
             {
                 NotifyStorage.Notify("DirectMessageはUnretweetできません。");
@@ -587,7 +587,7 @@ namespace Inscribe.Communication.Posting
                     }
                 });
             if (success)
-                NotifyStorage.Notify("Retweetをキャンセルしました: @" + status.ScreenName + ": " + status.BackEnd.Text);
+                NotifyStorage.Notify("Retweetをキャンセルしました: @" + status.ScreenName + ": " + status.Backend.Text);
         }
 
         private static void RemoveRetweetCore(AccountInfo d, TweetViewModel status)
@@ -595,8 +595,8 @@ namespace Inscribe.Communication.Posting
             // リツイートステータスの特定
             var rts = TweetStorage.GetAll(vm =>
                 vm.ScreenName == d.ScreenName &&
-                vm.BackEnd.RetweetedOriginalId != 0 &&
-                vm.BackEnd.RetweetedOriginalId == status.BackEnd.Id).FirstOrDefault();
+                vm.Backend.RetweetedOriginalId != 0 &&
+                vm.Backend.RetweetedOriginalId == status.Backend.Id).FirstOrDefault();
             if (rts == null || ApiHelper.ExecApi(() => d.DestroyStatus(rts.BindingId) == null))
                 throw new ApplicationException();
         }

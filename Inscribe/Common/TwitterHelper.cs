@@ -29,28 +29,28 @@ namespace Inscribe.Common
         public static bool IsRetweetedThis(TweetViewModel status)
         {
             if (status == null || !status.IsStatusInfoContains) return false;
-            var rtd = status.RetweetedUsers.Select(d => d.BackEnd.ScreenName).ToArray();
+            var rtd = status.RetweetedUsers.Select(d => d.Backend.ScreenName).ToArray();
             return AccountStorage.Accounts.Any(d => rtd.Contains(d.ScreenName));
         }
 
         public static bool IsRetweetedThisWithCurrent(TweetViewModel status, TabProperty property)
         {
             if (status == null || !status.IsStatusInfoContains || property == null) return false;
-            var rtd = status.RetweetedUsers.Select(d => d.BackEnd.ScreenName).ToArray();
+            var rtd = status.RetweetedUsers.Select(d => d.Backend.ScreenName).ToArray();
             return property.LinkAccountScreenNames.Any(a => rtd.Contains(a));
         }
 
         public static bool IsFavoredThis(TweetViewModel status)
         {
             if (status == null || !status.IsStatusInfoContains) return false;
-            var fvd = status.FavoredUsers.Select(d => d.BackEnd.ScreenName).ToArray();
+            var fvd = status.FavoredUsers.Select(d => d.Backend.ScreenName).ToArray();
             return AccountStorage.Accounts.Any(d => fvd.Contains(d.ScreenName));
         }
 
         public static bool IsFavoredThisWithCurrent(TweetViewModel status, TabProperty property)
         {
             if (status == null || !status.IsStatusInfoContains || property == null) return false;
-            var fvd = status.FavoredUsers.Select(d => d.BackEnd.ScreenName).ToArray();
+            var fvd = status.FavoredUsers.Select(d => d.Backend.ScreenName).ToArray();
             return property.LinkAccountScreenNames.Any(a => fvd.Contains(a));
         }
 
@@ -58,41 +58,41 @@ namespace Inscribe.Common
         {
             if (status == null || !status.IsStatusInfoContains) return false;
             return AccountStorage.Accounts.Where(d => !String.IsNullOrEmpty(d.ScreenName)).Any(d =>
-                Regex.IsMatch(status.BackEnd.Text, "@" + d.ScreenName + "(?![a-zA-Z0-9_])", RegexOptions.Singleline | RegexOptions.IgnoreCase));
+                Regex.IsMatch(status.Backend.Text, "@" + d.ScreenName + "(?![a-zA-Z0-9_])", RegexOptions.Singleline | RegexOptions.IgnoreCase));
         }
 
         public static bool IsInReplyToMeCurrent(TweetViewModel status, TabProperty property)
         {
             if (status == null || !status.IsStatusInfoContains || property == null) return false;
             return property.LinkAccountScreenNames.Any(a =>
-                Regex.IsMatch(status.BackEnd.Text, "@" + a + "(?![a-zA-Z0-9_])", RegexOptions.Singleline | RegexOptions.IgnoreCase));
+                Regex.IsMatch(status.Backend.Text, "@" + a + "(?![a-zA-Z0-9_])", RegexOptions.Singleline | RegexOptions.IgnoreCase));
         }
 
         public static bool IsInReplyToMeStrict(TweetViewModel status)
         {
             if (status == null || !status.IsStatusInfoContains) return false;
-            if (status.BackEnd.IsDirectMessage)
+            if (status.Backend.IsDirectMessage)
             {
-                var recp = UserStorage.Lookup(status.BackEnd.DirectMessageReceipientId);
-                return recp != null && AccountStorage.Accounts.Any(d => d.ScreenName == recp.BackEnd.ScreenName);
+                var recp = UserStorage.Lookup(status.Backend.DirectMessageReceipientId);
+                return recp != null && AccountStorage.Accounts.Any(d => d.ScreenName == recp.Backend.ScreenName);
             }
             else
             {
-                return AccountStorage.Accounts.Any(d => d.ScreenName == status.BackEnd.InReplyToUserScreenName);
+                return AccountStorage.Accounts.Any(d => d.ScreenName == status.Backend.InReplyToUserScreenName);
             }
         }
 
         public static bool IsInReplyToMeCurrentStrict(TweetViewModel status, TabProperty property)
         {
             if (status == null || !status.IsStatusInfoContains || property == null) return false;
-            if (status.BackEnd.IsDirectMessage)
+            if (status.Backend.IsDirectMessage)
             {
-                var recp = UserStorage.Lookup(status.BackEnd.DirectMessageReceipientId);
-                return recp != null && property.LinkAccountScreenNames.Any(a => a == recp.BackEnd.ScreenName);
+                var recp = UserStorage.Lookup(status.Backend.DirectMessageReceipientId);
+                return recp != null && property.LinkAccountScreenNames.Any(a => a == recp.Backend.ScreenName);
             }
             else
             {
-                return property.LinkAccountScreenNames.Any(a => a == status.BackEnd.InReplyToUserScreenName);
+                return property.LinkAccountScreenNames.Any(a => a == status.Backend.InReplyToUserScreenName);
             }
         }
 
@@ -128,10 +128,10 @@ namespace Inscribe.Common
         public static bool IsPublishedByRetweet(TweetViewModel status)
         {
             if (status == null || !status.IsStatusInfoContains) return false;
-            return IsPublishedByRetweet(status.BackEnd);
+            return IsPublishedByRetweet(status.Backend);
         }
 
-        public static bool IsPublishedByRetweet(TweetBackEnd status)
+        public static bool IsPublishedByRetweet(TweetBackend status)
         {
             if (status == null) return false;
             return status.RetweetedOriginalId != 0;
@@ -152,7 +152,7 @@ namespace Inscribe.Common
             return false;
         }
 
-        public static bool IsMentionOfMe(TweetBackEnd backend)
+        public static bool IsMentionOfMe(TweetBackend backend)
         {
             if (!backend.IsDirectMessage && backend.RetweetedOriginalId == 0)
             {
@@ -166,10 +166,10 @@ namespace Inscribe.Common
 
         public static UserViewModel GetSuggestedUser(TweetViewModel status)
         {
-            return GetSuggestedUser(status.BackEnd);
+            return GetSuggestedUser(status.Backend);
         }
 
-        public static UserViewModel GetSuggestedUser(TweetBackEnd backend)
+        public static UserViewModel GetSuggestedUser(TweetBackend backend)
         {
             if (IsPublishedByRetweet(backend))
             {
@@ -177,7 +177,7 @@ namespace Inscribe.Common
                 if (rtd == null)
                     return null;
                 else
-                    return UserStorage.Lookup(rtd.BackEnd.UserId);
+                    return UserStorage.Lookup(rtd.Backend.UserId);
             }
             else
             {

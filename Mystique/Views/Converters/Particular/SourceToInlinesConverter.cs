@@ -19,7 +19,7 @@ namespace Mystique.Views.Converters.Particular
             if (!Application.Current.Dispatcher.CheckAccess())
                 return Application.Current.Dispatcher.Invoke(new Action(() => ToTarget(input, parameter)), null) as IEnumerable<Inline>;
 
-            var src = input.BackEnd.Source;
+            var src = input.Backend.Source;
             Match m = null;
             if (!String.IsNullOrEmpty(src) && (m = SourceRegex.Match(src.Replace("\\", ""))).Success)
             {
@@ -30,7 +30,7 @@ namespace Mystique.Views.Converters.Particular
             }
             else
             {
-                return new[] { new Run(input.BackEnd.Source) };
+                return new[] { new Run(input.Backend.Source) };
             }
         }
     }

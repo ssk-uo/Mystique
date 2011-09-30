@@ -187,10 +187,10 @@ namespace Inscribe.Storage
                 if (vm.RegisterRetweeted(user))
                 {
                     if (!vm.IsStatusInfoContains)
-                        vm.SetBackEnd(new Perpetuation.TweetBackEnd(status.RetweetedOriginal));
+                        vm.SetBackEnd(new Perpetuation.TweetBackend(status.RetweetedOriginal));
                     // 自分が関係していれば
                     if (AccountStorage.Contains(status.RetweetedOriginal.User.ScreenName)
-                        || AccountStorage.Contains(user.BackEnd.ScreenName))
+                        || AccountStorage.Contains(user.Backend.ScreenName))
                         EventStorage.OnRetweeted(vm, user);
                 }
             }
@@ -235,7 +235,7 @@ namespace Inscribe.Storage
                 {
                     // 既にViewModelが生成済み
                     if (!viewModel.IsStatusInfoContains)
-                        viewModel.SetBackEnd(new Perpetuation.TweetBackEnd(statusBase));
+                        viewModel.SetBackEnd(new Perpetuation.TweetBackend(statusBase));
                     using (lockWrap.GetWriterLock())
                     {
                         empties.Remove(statusBase.Id);
@@ -244,7 +244,7 @@ namespace Inscribe.Storage
                 else
                 {
                     // 全く初めて触れるステータス
-                    viewModel = new TweetViewModel(new Perpetuation.TweetBackEnd(statusBase));
+                    viewModel = new TweetViewModel(new Perpetuation.TweetBackend(statusBase));
                 }
             }
             if (ValidateTweet(viewModel))
@@ -284,7 +284,7 @@ namespace Inscribe.Storage
         /// <returns></returns>
         public static bool ValidateTweet(TweetViewModel viewModel)
         {
-            if (viewModel.BackEnd == null || viewModel.BackEnd.UserId == 0)
+            if (viewModel.Backend == null || viewModel.Backend.UserId == 0)
                 throw new ArgumentException("データが破損しています。");
             return true;
         }
@@ -352,7 +352,7 @@ namespace Inscribe.Storage
             if (remobj != null)
             {
                 // リツイート判定
-                var be = remobj.BackEnd;
+                var be = remobj.Backend;
                 if(be.RetweetedOriginalId != 0)
                 {
                     var ros = TweetStorage.Get(be.RetweetedOriginalId);
@@ -405,11 +405,11 @@ namespace Inscribe.Storage
             TweetViewModel tvm;
             UserViewModel uvm;
             if ((!Setting.Instance.NotificationProperty.NotifyMention ||
-                !TwitterHelper.IsMentionOfMe(added.BackEnd)) &&
+                !TwitterHelper.IsMentionOfMe(added.Backend)) &&
                 (!Setting.Instance.NotificationProperty.NotifyRetweet ||
-                added.BackEnd.RetweetedOriginalId == 0 ||
-                ((tvm = TweetStorage.Get(added.BackEnd.RetweetedOriginalId)) != null &&
-                (uvm = UserStorage.Lookup(tvm.BackEnd.UserId)) != null &&
+                added.Backend.RetweetedOriginalId == 0 ||
+                ((tvm = TweetStorage.Get(added.Backend.RetweetedOriginalId)) != null &&
+                (uvm = UserStorage.Lookup(tvm.Backend.UserId)) != null &&
                 AccountStorage.ContainsId(uvm.BindingId))))
                 NotificationCore.RegisterNotify(added);
             OnTweetStorageChanged(new TweetStorageChangedEventArgs(TweetActionKind.Added, added));

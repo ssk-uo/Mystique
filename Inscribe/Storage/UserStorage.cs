@@ -26,7 +26,7 @@ namespace Inscribe.Storage
                 throw new ArgumentNullException("userScreenName");
             using (lockWrap.GetReaderLock())
             {
-                return dictionary.Values.Where(u => u.BackEnd.ScreenName == userScreenName).FirstOrDefault();
+                return dictionary.Values.Where(u => u.Backend.ScreenName == userScreenName).FirstOrDefault();
             }
         }
 
@@ -53,7 +53,7 @@ namespace Inscribe.Storage
         {
             if (user == null)
                 throw new ArgumentNullException("user");
-            var newvm = new UserViewModel(new UserBackEnd(user));
+            var newvm = new UserViewModel(new UserBackend(user));
             using (lockWrap.GetWriterLock())
             {
                 if (dictionary.ContainsKey(user.NumericId))
@@ -90,7 +90,7 @@ namespace Inscribe.Storage
                         var ud = acc.GetUserByScreenName(userScreenName);
                         if (ud != null)
                         {
-                            var uvm = new UserViewModel(new UserBackEnd(ud));
+                            var uvm = new UserViewModel(new UserBackend(ud));
                             using (lockWrap.GetWriterLock())
                             {
                                 dictionary.Add(ud.NumericId, uvm);

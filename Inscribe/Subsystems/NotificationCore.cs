@@ -41,7 +41,7 @@ namespace Inscribe.Subsystems
                         IssueNotification(
                             e.EventDescription.SourceUser,
                             e.EventDescription.TargetUser,
-                            e.EventDescription.SourceUser.BackEnd.Bio,
+                            e.EventDescription.SourceUser.Backend.Bio,
                             EventKind.Follow);
                     break;
                 case EventKind.Mention:
@@ -80,15 +80,15 @@ namespace Inscribe.Subsystems
         private static bool CheckIsAllowed(TweetViewModel vm)
         {
             // データ破損
-            if (vm.BackEnd == null)
+            if (vm.Backend == null)
                 return false;
             // ミュート対象
             if (Setting.Instance.TimelineFilteringProperty.MuteFilterCluster != null &&
-                Setting.Instance.TimelineFilteringProperty.MuteFilterCluster.Filter(vm.BackEnd))
+                Setting.Instance.TimelineFilteringProperty.MuteFilterCluster.Filter(vm.Backend))
                 return false;
             // ブロック対象
             if (Setting.Instance.TimelineFilteringProperty.MuteBlockedUsers &&
-                AccountStorage.Accounts.Any(a => a.IsBlocking(vm.BackEnd.UserId)))
+                AccountStorage.Accounts.Any(a => a.IsBlocking(vm.Backend.UserId)))
                 return false;
             return true;
         }
@@ -126,7 +126,7 @@ namespace Inscribe.Subsystems
                     var notify = waitings[tweet];
                     waitings.Remove(tweet);
                     if (notify != null)
-                        IssueNotification(UserStorage.Lookup(tweet.BackEnd.UserId), null, tweet.BackEnd.Text, EventKind.Undefined, notify);
+                        IssueNotification(UserStorage.Lookup(tweet.Backend.UserId), null, tweet.Backend.Text, EventKind.Undefined, notify);
                 }
             }
         }

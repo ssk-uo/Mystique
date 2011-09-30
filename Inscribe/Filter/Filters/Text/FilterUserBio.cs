@@ -15,10 +15,10 @@ namespace Inscribe.Filter.Filters.Text
             this.isCaseSensitive = isCaseSensitive;
         }
 
-        protected override bool FilterStatus(TweetBackEnd status)
+        protected override bool FilterStatus(TweetBackend status)
         {
             var ud = UserStorage.Lookup(status.UserId);
-            return this.Match(ud.BackEnd.Bio, this.needle, this.isCaseSensitive);
+            return this.Match(ud.Backend.Bio, this.needle, this.isCaseSensitive);
         }
 
         public override string Identifier

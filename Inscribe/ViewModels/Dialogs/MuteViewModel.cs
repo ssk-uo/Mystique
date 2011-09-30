@@ -19,7 +19,7 @@ namespace Inscribe.ViewModels.Dialogs
         public MuteViewModel(TweetViewModel tvm)
         {
             this._status = tvm;
-            this.MuteText = tvm.BackEnd.Text;
+            this.MuteText = tvm.Backend.Text;
         }
 
         private string _muteText;
@@ -39,7 +39,7 @@ namespace Inscribe.ViewModels.Dialogs
         {
             get
             {
-                return this._status.BackEnd.Source;
+                return this._status.Backend.Source;
             }
         }
 

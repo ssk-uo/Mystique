@@ -41,7 +41,7 @@ namespace Inscribe.Filter.Filters.Numeric
             this.Range = LongRange.FromPivotValue(pivot);
         }
         
-        protected override bool FilterStatus(TweetBackEnd status)
+        protected override bool FilterStatus(TweetBackend status)
         {
             var ts = TweetStorage.Get(status.Id);
             if (ts == null) return false;

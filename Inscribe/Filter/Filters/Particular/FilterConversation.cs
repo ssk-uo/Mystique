@@ -37,7 +37,7 @@ namespace Inscribe.Filter.Filters.Particular
             this.user2 = user2;
         }
 
-        protected override bool FilterStatus(TweetBackEnd status)
+        protected override bool FilterStatus(TweetBackend status)
         {
             // conversation control
             if (status.IsDirectMessage)
@@ -45,10 +45,10 @@ namespace Inscribe.Filter.Filters.Particular
                 var send = UserStorage.Lookup(status.UserId);
                 var recp = UserStorage.Lookup(status.DirectMessageReceipientId);
                 return
-                    (send.BackEnd.ScreenName.Equals(user1, StringComparison.CurrentCultureIgnoreCase) &&
-                     recp.BackEnd.ScreenName.Equals(user2, StringComparison.CurrentCultureIgnoreCase)) ||
-                    (send.BackEnd.ScreenName.Equals(user2, StringComparison.CurrentCultureIgnoreCase) &&
-                     recp.BackEnd.ScreenName.Equals(user1, StringComparison.CurrentCultureIgnoreCase));
+                    (send.Backend.ScreenName.Equals(user1, StringComparison.CurrentCultureIgnoreCase) &&
+                     recp.Backend.ScreenName.Equals(user2, StringComparison.CurrentCultureIgnoreCase)) ||
+                    (send.Backend.ScreenName.Equals(user2, StringComparison.CurrentCultureIgnoreCase) &&
+                     recp.Backend.ScreenName.Equals(user1, StringComparison.CurrentCultureIgnoreCase));
             }
             else
             {
@@ -59,7 +59,7 @@ namespace Inscribe.Filter.Filters.Particular
                 var vm = TweetStorage.Get(status.Id);
                 if (vm != null && vm.InReplyFroms.Select(id => TweetStorage.Get(id))
                     .Where(irvm => irvm != null)
-                    .Any(irvm => CheckScreenName(irvm.BackEnd.UserId, user1) || CheckScreenName(irvm.BackEnd.UserId, user2)))
+                    .Any(irvm => CheckScreenName(irvm.Backend.UserId, user1) || CheckScreenName(irvm.Backend.UserId, user2)))
                     return true;
                 else
                     return false;
@@ -69,7 +69,7 @@ namespace Inscribe.Filter.Filters.Particular
         private bool CheckScreenName(long userId, string checkScreenName)
         {
             var ud = UserStorage.Lookup(userId);
-            return ud != null && ud.BackEnd.ScreenName.Equals(checkScreenName, StringComparison.CurrentCultureIgnoreCase);
+            return ud != null && ud.Backend.ScreenName.Equals(checkScreenName, StringComparison.CurrentCultureIgnoreCase);
         }
 
         public override string Identifier

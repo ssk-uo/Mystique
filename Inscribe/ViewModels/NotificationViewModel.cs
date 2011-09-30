@@ -25,7 +25,7 @@ namespace Inscribe.ViewModels
 
         public Uri UserImage
         {
-            get { return new Uri(SourceUser.BackEnd.ProfileImage); }
+            get { return new Uri(SourceUser.Backend.ProfileImage); }
         }
 
         public UserViewModel SourceUser

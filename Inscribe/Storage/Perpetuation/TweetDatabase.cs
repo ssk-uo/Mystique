@@ -13,6 +13,6 @@ namespace Inscribe.Storage.Perpetuation
     {
         internal TweetDatabase(string cstr) : base(cstr) { }
 
-        public IDbSet<TweetBackEnd> TweetSet { get; set; }
+        public IDbSet<TweetBackend> TweetSet { get; set; }
     }
 }

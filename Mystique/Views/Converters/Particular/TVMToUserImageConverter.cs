@@ -27,12 +27,12 @@ namespace Mystique.Views.Converters.Particular
                 case UserImageViewKind.Default:
                 case UserImageViewKind.Retweeted:
                     var rud = input.UserViewModel;
-                    return rud != null ? new Uri(rud.BackEnd.ProfileImage) : null;
+                    return rud != null ? new Uri(rud.Backend.ProfileImage) : null;
                 case UserImageViewKind.DirectMessageRecipient:
-                    var dud = UserStorage.Lookup(input.BackEnd.DirectMessageReceipientId);
-                    return dud != null ? new Uri(dud.BackEnd.ProfileImage) : null;
+                    var dud = UserStorage.Lookup(input.Backend.DirectMessageReceipientId);
+                    return dud != null ? new Uri(dud.Backend.ProfileImage) : null;
                 case UserImageViewKind.Suggested:
-                    return new Uri(TwitterHelper.GetSuggestedUser(input).BackEnd.ProfileImage);
+                    return new Uri(TwitterHelper.GetSuggestedUser(input).Backend.ProfileImage);
                 default:
                     return null;
             }

@@ -29,7 +29,7 @@ namespace Inscribe.Filter.Filters.Numeric
             this.Range = LongRange.FromPivotValue(pivot);
         }
 
-        protected override bool FilterStatus(TweetBackEnd status)
+        protected override bool FilterStatus(TweetBackend status)
         {
             return this.Range.Check(status.UserId);
         }
@@ -62,7 +62,7 @@ namespace Inscribe.Filter.Filters.Numeric
                     }
                     else
                     {
-                        return "ユーザー数値ID:" + this.Range.ToString() + "(逆引き: @" + u.BackEnd.ScreenName + ")";
+                        return "ユーザー数値ID:" + this.Range.ToString() + "(逆引き: @" + u.Backend.ScreenName + ")";
                     }
                 }
                 else

@@ -34,9 +34,9 @@ namespace Inscribe.Filter.Filters.Numeric
             tweb = new WeakEventBinder<TweetStorageChangedEventArgs>(TweetStorage.TweetStorageChangedEvent);
             tweb.Notify += (_, tcev) =>
                 {
-                    if (tcev.ActionKind == TweetActionKind.Removed && !tcev.Tweet.BackEnd.IsDirectMessage && tcev.Tweet.IsPublishedByRetweet)
+                    if (tcev.ActionKind == TweetActionKind.Removed && !tcev.Tweet.Backend.IsDirectMessage && tcev.Tweet.IsPublishedByRetweet)
                     {
-                        this.RaisePartialRequireReaccept(tcev.Tweet.BackEnd.RetweetedOriginalId);
+                        this.RaisePartialRequireReaccept(tcev.Tweet.Backend.RetweetedOriginalId);
                     }
                 };
         }
@@ -53,7 +53,7 @@ namespace Inscribe.Filter.Filters.Numeric
             this.Range = LongRange.FromPivotValue(pivot);
         }
 
-        protected override bool FilterStatus(TweetBackEnd status)
+        protected override bool FilterStatus(TweetBackend status)
         {
             var ts = TweetStorage.Get(status.Id);
             if (ts == null) return false;

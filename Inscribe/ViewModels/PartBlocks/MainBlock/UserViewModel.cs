@@ -13,9 +13,9 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
     {
         #region Backend services
 
-        private UserBackEnd _backend;
+        private UserBackend _backend;
 
-        private UserBackEnd BackendCache
+        private UserBackend BackendCache
         {
             get
             {
@@ -29,7 +29,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
             get { return _backend != null; }
         }
 
-        internal void SetBackend(UserBackEnd backend)
+        internal void SetBackend(UserBackend backend)
         {
             this._backend = backend;
             this._lastReference = DateTime.Now;
@@ -48,7 +48,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
 
         #endregion
 
-        public UserViewModel(UserBackEnd user)
+        public UserViewModel(UserBackend user)
         {
             if (user == null)
                 throw new NullReferenceException("user");
@@ -61,7 +61,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         /// <summary>
         /// バックエンドをDBキャッシュを考慮して取得します。
         /// </summary>
-        public UserBackEnd BackEnd
+        public UserBackend Backend
         {
             get
             {
