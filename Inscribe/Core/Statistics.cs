@@ -23,7 +23,7 @@ namespace Inscribe.Core
 
         static Statistics()
         {
-            tweetSpeedUpdate = new Timer(TweetSpeedUpdateSink, null, 0, 1000 * 20);
+            tweetSpeedUpdate = new Timer(TweetSpeedUpdateSink, null, 0, 1000 * 30);
             wakeUpTimeUpdate = new Timer(WakeupTimeUpdateSink, null, 0, 1000);
         }
 

@@ -11,6 +11,7 @@ using Inscribe.Subsystems;
 using Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild;
 using Livet;
 using Inscribe.ViewModels.PartBlocks.MainBlock;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Storage
 {
@@ -96,7 +97,7 @@ namespace Inscribe.Storage
                     return ret;
                 if (createEmpty)
                 {
-                    using(lockWrap.GetWriterLock())
+                    using (lockWrap.GetWriterLock())
                     {
                         var nvm = new TweetViewModel(id);
                         empties.Add(id, nvm);
@@ -135,7 +136,6 @@ namespace Inscribe.Storage
         {
             using (lockWrap.GetReaderLock())
             {
-                System.Diagnostics.Debug.WriteLine("cnt");
                 return dictionary.Count;
             }
         }
@@ -187,7 +187,7 @@ namespace Inscribe.Storage
                 if (vm.RegisterRetweeted(user))
                 {
                     if (!vm.IsStatusInfoContains)
-                        vm.SetBackEnd(new Perpetuation.TweetBackend(status.RetweetedOriginal));
+                        vm.SetBackend(new Perpetuation.TweetBackend(status.RetweetedOriginal));
                     // 自分が関係していれば
                     if (AccountStorage.Contains(status.RetweetedOriginal.User.ScreenName)
                         || AccountStorage.Contains(user.Backend.ScreenName))
@@ -231,11 +231,11 @@ namespace Inscribe.Storage
             TweetViewModel viewModel;
             using (lockWrap.GetUpgradableReaderLock())
             {
-                if(empties.TryGetValue(statusBase.Id, out viewModel))
+                if (empties.TryGetValue(statusBase.Id, out viewModel))
                 {
                     // 既にViewModelが生成済み
                     if (!viewModel.IsStatusInfoContains)
-                        viewModel.SetBackEnd(new Perpetuation.TweetBackend(statusBase));
+                        viewModel.SetBackend(new Perpetuation.TweetBackend(statusBase));
                     using (lockWrap.GetWriterLock())
                     {
                         empties.Remove(statusBase.Id);
@@ -261,10 +261,12 @@ namespace Inscribe.Storage
                         }
                         else
                         {
+                            PerpetuationStorage.AddTweetBackend(viewModel.Backend);
                             using (lockWrap.GetWriterLock())
                             {
                                 dictionary.Add(statusBase.Id, viewModel);
                             }
+                            Task.Factory.StartNew(() => ReleaseCacheIfNeeded());
                         }
                     }
                     if (!deleteReserveds.Contains(statusBase.Id))
@@ -353,7 +355,7 @@ namespace Inscribe.Storage
             {
                 // リツイート判定
                 var be = remobj.Backend;
-                if(be.RetweetedOriginalId != 0)
+                if (be.RetweetedOriginalId != 0)
                 {
                     var ros = TweetStorage.Get(be.RetweetedOriginalId);
                     if (ros != null)
@@ -361,6 +363,8 @@ namespace Inscribe.Storage
                 }
             }
         }
+
+        #region Event notification
 
         /// <summary>
         /// ツイートの内部状態が変化したことを通知します。<para />
@@ -430,6 +434,32 @@ namespace Inscribe.Storage
         {
             OnTweetStorageChanged(new TweetStorageChangedEventArgs(TweetActionKind.Refresh));
         }
+
+        #endregion
+
+        #region Cache control
+
+        /// <summary>
+        /// 必要であればキャッシュを削除し、メモリ領域を解放します。
+        /// </summary>
+        public static void ReleaseCacheIfNeeded()
+        {
+            if (!Setting.IsInitialized) return;
+            TweetViewModel[] releases = null;
+            using (lockWrap.GetUpgradableReaderLock())
+            {
+                releases = dictionary.Values.Where(uvm => uvm.IsBackendAlive).ToArray();
+            }
+            if (releases.Length > Setting.Instance.KernelProperty.TweetCacheMaxCount)
+            {
+                Task.Factory.StartNew(() => releases
+                    .OrderByDescending(tvm => tvm.LastReference)
+                    .Skip((int)(Setting.Instance.KernelProperty.TweetCacheMaxCount * Setting.Instance.KernelProperty.TweetCacheSurviveDensity))
+                    .ForEach(uvm => uvm.ReleaseBackend()));
+            }
+        }
+
+        #endregion
     }
     
 

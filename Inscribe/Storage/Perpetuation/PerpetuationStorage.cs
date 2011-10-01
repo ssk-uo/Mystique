@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Data.Entity;
+﻿using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.IO;
+using System.Linq;
 using Inscribe.Common;
 
 namespace Inscribe.Storage.Perpetuation
@@ -14,42 +11,42 @@ namespace Inscribe.Storage.Perpetuation
     /// </summary>
     internal static class PerpetuationStorage
     {
-        static object tdblock = new object();
+        static object dblock = new object();
 
-        static TweetDatabase tdatabase;
+        static PerpetuationDatabase database;
 
-        static object udblock = new object();
-
-        static UserDatabase udatabase;
 
         internal static void ConnectDB()
         {
             ThreadHelper.Halt += () => DisconnectDB();
-            lock (tdblock)
+            lock (dblock)
             {
-                lock (udblock)
+                Database.DefaultConnectionFactory = new SqlCeConnectionFactory("System.Data.SqlServerCe.4.0");
+                // Initialize Database
+                Database.SetInitializer(new DropCreateDatabaseAlways<PerpetuationDatabase>());
+                var path = Path.Combine(Path.GetDirectoryName(Define.ExeFilePath), Define.DatabaseFileName);
+                database = new PerpetuationDatabase(path);
+            }
+        }
+
+        internal static void AddTweetBackend(TweetBackend tbe)
+        {
+            lock (dblock)
+            {
+                if (database != null)
                 {
-                    Database.DefaultConnectionFactory = new SqlCeConnectionFactory("System.Data.SqlServerCe.4.0");
-
-                    // Initialize User Database
-                    Database.SetInitializer(new DropCreateDatabaseAlways<UserDatabase>());
-                    var upath = Path.Combine(Path.GetDirectoryName(Define.ExeFilePath), Define.UserDatabaseFileName);
-                    udatabase = new UserDatabase(upath);
-
-                    // Initialize Tweet Database
-                    Database.SetInitializer(new DropCreateDatabaseAlways<TweetDatabase>());
-                    var tpath = Path.Combine(Path.GetDirectoryName(Define.ExeFilePath), Define.TweetDatabaseFileName);
-                    tdatabase = new TweetDatabase(tpath);
+                    database.TweetSet.Add(tbe);
+                    database.SaveChanges();
                 }
             }
         }
 
-        internal static TweetBackend GetTweetBackEnd(long id)
+        internal static TweetBackend GetTweetBackend(long id)
         {
-            lock (tdblock)
+            lock (dblock)
             {
-                if (tdatabase != null)
-                    return tdatabase.TweetSet.Where(b => b.Id == id).FirstOrDefault();
+                if (database != null)
+                    return database.TweetSet.Where(b => b.Id == id).FirstOrDefault();
                 else
                     return null;
             }
@@ -57,19 +54,31 @@ namespace Inscribe.Storage.Perpetuation
 
         internal static void TweetSaveChange()
         {
-            lock (tdblock)
+            lock (dblock)
             {
-                if (tdatabase != null)
-                    tdatabase.SaveChanges();
+                if (database != null)
+                    database.SaveChanges();
             }
         }
 
-        internal static UserBackend GetUserBackEnd(long id)
+        internal static void AddUserBackend(UserBackend ube)
         {
-            lock (tdblock)
+            lock (dblock)
             {
-                if (udatabase != null)
-                    return udatabase.UserSet.Where(b => b.Id == id).FirstOrDefault();
+                if (database != null)
+                {
+                    database.UserSet.Add(ube);
+                    database.SaveChanges();
+                }
+            }
+        }
+
+        internal static UserBackend GetUserBackend(long id)
+        {
+            lock (dblock)
+            {
+                if (database != null)
+                    return database.UserSet.Where(b => b.Id == id).FirstOrDefault();
                 else
                     return null;
             }
@@ -77,24 +86,19 @@ namespace Inscribe.Storage.Perpetuation
 
         internal static void UserSaveChange()
         {
-            lock (udblock)
+            lock (dblock)
             {
-                if (udatabase != null)
-                    udatabase.SaveChanges();
+                if (database != null)
+                    database.SaveChanges();
             }
         }
 
         internal static void DisconnectDB()
         {
-            lock (tdblock)
+            lock (dblock)
             {
-                tdatabase.Dispose();
-                tdatabase = null;
-            }
-            lock (udblock)
-            {
-                udatabase.Dispose();
-                udatabase = null;
+                database.Dispose();
+                database = null;
             }
         }
     }

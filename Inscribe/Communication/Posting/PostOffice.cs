@@ -82,7 +82,7 @@ namespace Inscribe.Communication.Posting
                 var uid = info.Id;
                 var originate = TweetStorage.GetAll(
                     t => t.BindingId == uid && DateTime.Now.Subtract(t.CreatedAt) < TwitterDefine.UnderControlTimespan)
-                    .OrderByDescending((t) => t.Backend.CreatedAt)
+                    .OrderByDescending((t) => t.CreatedAt)
                     .Skip(TwitterDefine.UnderControlCount - 1)
                     .FirstOrDefault();
 
@@ -90,7 +90,7 @@ namespace Inscribe.Communication.Posting
                 {
                     originate = TweetStorage.GetAll(
                         t => t.BindingId == uid && DateTime.Now.Subtract(t.CreatedAt) < TwitterDefine.UnderControlTimespan)
-                        .OrderByDescending((t) => t.Backend.CreatedAt)
+                        .OrderByDescending((t) => t.CreatedAt)
                         .LastOrDefault();
                 }
 
@@ -100,7 +100,7 @@ namespace Inscribe.Communication.Posting
                 }
                 else
                 {
-                    var release = (originate.Backend.CreatedAt + TwitterDefine.UnderControlTimespan);
+                    var release = (originate.CreatedAt + TwitterDefine.UnderControlTimespan);
                     NotifyStorage.Notify("[規制管理: @" + info.ScreenName +
                         " はPOST規制されています。解除予想時刻は " + release.ToString("HH:mm:ss") + " です。]");
                     underControls.AddOrUpdate(info, release);
@@ -166,7 +166,7 @@ namespace Inscribe.Communication.Posting
             var uid = info.Id;
             // とりあえずこのユーザーの全ツイートを持ってくる
             var times = TweetStorage.GetAll(t => t.BindingId == uid)
-                .Select(t => t.Backend.CreatedAt)
+                .Select(t => t.CreatedAt)
                 .OrderByDescending(t => t) // 新着順に並べる
                 .ToArray();
 

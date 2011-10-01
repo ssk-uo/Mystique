@@ -6,6 +6,8 @@ using Livet;
 using Dulcet.Twitter;
 using Livet.Commands;
 using Inscribe.Storage.Perpetuation;
+using System.Threading.Tasks;
+using Inscribe.Storage;
 
 namespace Inscribe.ViewModels.PartBlocks.MainBlock
 {
@@ -74,7 +76,12 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
                 else
                 {
                     // from DB
-                    throw new NotImplementedException();
+                    var be = PerpetuationStorage.GetUserBackend(this.BindingId);
+                    this._backend = be;
+                    this._lastReference = DateTime.Now;
+                    RaisePropertyChanged(() => Backend);
+                    Task.Factory.StartNew(() => UserStorage.ReleaseCacheIfNeeded());
+                    return be;
                 }
             }
         }

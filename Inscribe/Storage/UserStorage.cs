@@ -7,6 +7,8 @@ using Dulcet.Twitter.Rest;
 using Inscribe.Data;
 using Inscribe.Storage.Perpetuation;
 using Inscribe.ViewModels.PartBlocks.MainBlock;
+using Inscribe.Configuration;
+using System.Threading.Tasks;
 
 namespace Inscribe.Storage
 {
@@ -53,15 +55,30 @@ namespace Inscribe.Storage
         {
             if (user == null)
                 throw new ArgumentNullException("user");
-            var newvm = new UserViewModel(new UserBackend(user));
-            using (lockWrap.GetWriterLock())
+            using (lockWrap.GetUpgradableReaderLock())
             {
-                if (dictionary.ContainsKey(user.NumericId))
-                    dictionary[user.NumericId] = newvm;
-                else
+                UserViewModel uvm;
+                if (dictionary.TryGetValue(user.NumericId, out uvm))
+                {
+                    var be = uvm.Backend;
+                    if (be != null)
+                    {
+                        be.Overwrite(user);
+                        PerpetuationStorage.UserSaveChange();
+                    }
+                    return uvm;
+                }
+                // register
+                var newvm = new UserViewModel(new UserBackend(user));
+                System.Diagnostics.Debug.WriteLine("register:" + user.NumericId);
+                PerpetuationStorage.AddUserBackend(newvm.Backend);
+                using (lockWrap.GetWriterLock())
+                {
                     dictionary.Add(user.NumericId, newvm);
+                }
+                Task.Factory.StartNew(() => ReleaseCacheIfNeeded());
+                return newvm;
             }
-            return newvm;
         }
 
         /// <summary>
@@ -89,14 +106,7 @@ namespace Inscribe.Storage
                     {
                         var ud = acc.GetUserByScreenName(userScreenName);
                         if (ud != null)
-                        {
-                            var uvm = new UserViewModel(new UserBackend(ud));
-                            using (lockWrap.GetWriterLock())
-                            {
-                                dictionary.Add(ud.NumericId, uvm);
-                            }
-                            return uvm;
-                        }
+                            return Get(ud);
                     }
                     catch (Exception e)
                     {
@@ -122,5 +132,26 @@ namespace Inscribe.Storage
                 return dictionary.Values.ToArray();
             }
         }
+
+        #region Cache control
+
+        public static void ReleaseCacheIfNeeded()
+        {
+            if (!Setting.IsInitialized) return;
+            UserViewModel[] releases = null;
+            using (lockWrap.GetUpgradableReaderLock())
+            {
+                releases = dictionary.Values.Where(uvm => uvm.IsBackendAlive).ToArray();
+            }
+            if (releases.Length > Setting.Instance.KernelProperty.UserCacheMaxCount)
+            {
+                Task.Factory.StartNew(() => releases
+                    .OrderByDescending(uvm => uvm.LastReference)
+                    .Skip((int)(Setting.Instance.KernelProperty.UserCacheMaxCount * Setting.Instance.KernelProperty.UserCacheSurviveDensity))
+                    .ForEach(uvm => uvm.ReleaseBackend()));
+            }
+        }
+
+        #endregion
     }
 }

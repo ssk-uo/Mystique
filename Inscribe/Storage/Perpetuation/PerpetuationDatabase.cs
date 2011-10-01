@@ -9,10 +9,12 @@ using System.Threading.Tasks;
 
 namespace Inscribe.Storage.Perpetuation
 {
-    internal sealed class TweetDatabase : DbContext
+    internal sealed class PerpetuationDatabase : DbContext
     {
-        internal TweetDatabase(string cstr) : base(cstr) { }
+        internal PerpetuationDatabase(string cstr) : base(cstr) { }
 
         public IDbSet<TweetBackend> TweetSet { get; set; }
+
+        public IDbSet<UserBackend> UserSet { get; set; }
     }
 }

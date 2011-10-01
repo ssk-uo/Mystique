@@ -2,8 +2,8 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
-using Dulcet.Twitter;
 using Inscribe.Common;
 using Inscribe.Configuration;
 using Inscribe.Data;
@@ -44,11 +44,12 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
             get { return _backend != null; }
         }
 
-        internal void SetBackEnd(TweetBackend backend)
+        internal void SetBackend(TweetBackend backend)
         {
             this._backend = backend;
             this._lastReference = DateTime.Now;
-            this._backendIsGenerated = true;
+            this._createdAt = backend.CreatedAt;
+            this._isBackendGenerated = true;
             RaisePropertyChanged(() => Backend);
         }
 
@@ -65,7 +66,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         public readonly long BindingId;
 
-        private bool _backendIsGenerated;
+        private bool _isBackendGenerated;
 
         /// <summary>
         /// バックエンドをDBキャッシュを考慮して取得します。
@@ -75,7 +76,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
             get
             {
                 var bec = this.BackendCache;
-                if (bec != null || !_backendIsGenerated)
+                if (bec != null || !_isBackendGenerated)
                 {
                     // バックエンドがまだ生きているか、もしくはそもそも存在していない
                     return bec;
@@ -83,8 +84,12 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
                 else 
                 {
                     // DBから取得
-                    throw new NotImplementedException();
+                    var be = PerpetuationStorage.GetTweetBackend(this.BindingId);
+                    this._backend = be;
+                    this._lastReference = DateTime.Now;
                     RaisePropertyChanged(() => Backend);
+                    Task.Factory.StartNew(() => TweetStorage.ReleaseCacheIfNeeded());
+                    return be;
                 }
             }
         }
@@ -97,14 +102,15 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
                 throw new ArgumentException("backend");
             this.BindingId = backend.Id;
             this._backend = backend;
-            this._backendIsGenerated = true;
+            this._createdAt = backend.CreatedAt;
+            this._isBackendGenerated = true;
             this._lastReference = DateTime.Now;
         }
 
         public TweetViewModel(long id)
         {
             this.BindingId = id;
-            this._backendIsGenerated = false;
+            this._isBackendGenerated = false;
             this._lastReference = DateTime.Now;
         }
 
@@ -467,14 +473,12 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
             }
         }
 
+        private DateTime _createdAt;
         public DateTime CreatedAt
         {
             get
             {
-                if (this.Backend == null)
-                    return DateTime.MinValue;
-                else
-                    return this.Backend.CreatedAt;
+                return _createdAt;
             }
         }
 

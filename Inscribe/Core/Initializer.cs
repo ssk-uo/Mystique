@@ -27,10 +27,13 @@ namespace Inscribe.Core
             // ネットワーク初期化
             Dulcet.Network.Http.Expect100Continue = false;
             Dulcet.Network.Http.MaxConnectionLimit = Int32.MaxValue;
-            Dulcet.Network.Http.TimeoutInterval = 8000;
+            Dulcet.Network.Http.TimeoutInterval = 12000;
 
             // 設定のロード
             Setting.Initialize();
+
+            // データベース初期化
+            PerpetuationStorage.ConnectDB();
 
             // サブシステムの初期化
             NotificationCore.Initialize();
