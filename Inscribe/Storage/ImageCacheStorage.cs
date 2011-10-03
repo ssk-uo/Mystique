@@ -42,19 +42,25 @@ namespace Inscribe.Storage
 
         private static void GC(object o)
         {
+            if (!Setting.IsInitialized) return;
             BitmapImage[] releases = null;
-            using (lockWrap.GetWriterLock())
+            using (lockWrap.GetUpgradableReaderLock())
             {
-                releases = imageDataDictionary
-                    .Where(d => DateTime.Now.Subtract(d.Value.Value).TotalMilliseconds > Setting.Instance.KernelProperty.ImageLifetime)
-                    .Concat(imageDataDictionary.OrderByDescending(v => v.Value.Value)
-                    .Skip((int)(Setting.Instance.KernelProperty.ImageCacheMaxCount * Setting.Instance.KernelProperty.ImageCacheSurviveDensity)))
-                    .ToArray()
-                    .Select(d =>
-                    {
-                        imageDataDictionary.Remove(d.Key);
-                        return d.Value.Key;
-                    }).ToArray();
+                if (imageDataDictionary.Count < Setting.Instance.KernelProperty.ImageCacheMaxCount) return;
+                using (lockWrap.GetWriterLock())
+                {
+                    releases = imageDataDictionary
+                        .Where(d => DateTime.Now.Subtract(d.Value.Value).TotalMilliseconds > Setting.Instance.KernelProperty.ImageLifetime)
+                        .Concat(imageDataDictionary.OrderByDescending(v => v.Value.Value)
+                        .Skip((int)(Setting.Instance.KernelProperty.ImageCacheMaxCount * Setting.Instance.KernelProperty.ImageCacheSurviveDensity)))
+                        .Distinct()
+                        .ToArray()
+                        .Select(d =>
+                        {
+                            imageDataDictionary.Remove(d.Key);
+                            return d.Value.Key;
+                        }).ToArray();
+                }
             }
             releases.ForEach(img =>
             {

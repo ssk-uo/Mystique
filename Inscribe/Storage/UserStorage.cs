@@ -137,7 +137,7 @@ namespace Inscribe.Storage
 
         public static void ReleaseCacheIfNeeded()
         {
-            if (!Setting.IsInitialized) return;
+            if (!Setting.IsInitialized || Setting.Instance.KernelProperty.UserCacheMaxCount == 0) return;
             UserViewModel[] releases = null;
             using (lockWrap.GetUpgradableReaderLock())
             {

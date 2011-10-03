@@ -444,7 +444,7 @@ namespace Inscribe.Storage
         /// </summary>
         public static void ReleaseCacheIfNeeded()
         {
-            if (!Setting.IsInitialized) return;
+            if (!Setting.IsInitialized || Setting.Instance.KernelProperty.TweetCacheMaxCount == 0) return;
             TweetViewModel[] releases = null;
             using (lockWrap.GetUpgradableReaderLock())
             {
