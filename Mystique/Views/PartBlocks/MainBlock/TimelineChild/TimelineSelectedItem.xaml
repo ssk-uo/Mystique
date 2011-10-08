@@ -391,7 +391,7 @@
                             <DataTemplate>
                                 <com:LazyImage Width="22"
                                                Height="22"
-                                               UriSource="{Binding Path=TwitterUser.ProfileImage}">
+                                               UriSource="{Binding Path=Backend.ProfileImage}">
                                     <com:LazyImage.InputBindings>
                                         <MouseBinding Command="{Binding Path=DataContext.OpenUserCommand,
                                                                         RelativeSource={RelativeSource Mode=FindAncestor,
@@ -400,7 +400,7 @@
                                                       MouseAction="LeftClick" />
                                     </com:LazyImage.InputBindings>
                                     <com:LazyImage.ToolTip>
-                                        <TextBlock Text="{Binding Path=TwitterUser.ScreenName, StringFormat=@{0}}" />
+                                        <TextBlock Text="{Binding Path=Backend.ScreenName, StringFormat=@{0}}" />
                                     </com:LazyImage.ToolTip>
                                 </com:LazyImage>
                             </DataTemplate>
@@ -441,7 +441,7 @@
                             <DataTemplate>
                                 <com:LazyImage Width="22"
                                                Height="22"
-                                               UriSource="{Binding Path=TwitterUser.ProfileImage}">
+                                               UriSource="{Binding Path=Backend.ProfileImage}">
                                     <com:LazyImage.InputBindings>
                                         <MouseBinding Command="{Binding Path=DataContext.OpenUserCommand,
                                                                         RelativeSource={RelativeSource Mode=FindAncestor,
@@ -450,7 +450,7 @@
                                                       MouseAction="LeftClick" />
                                     </com:LazyImage.InputBindings>
                                     <com:LazyImage.ToolTip>
-                                        <TextBlock Text="{Binding Path=TwitterUser.ScreenName, StringFormat=@{0}}" />
+                                        <TextBlock Text="{Binding Path=Backend.ScreenName, StringFormat=@{0}}" />
                                     </com:LazyImage.ToolTip>
                                 </com:LazyImage>
                             </DataTemplate>

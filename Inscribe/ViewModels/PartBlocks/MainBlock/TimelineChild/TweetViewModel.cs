@@ -46,6 +46,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         internal void SetBackend(TweetBackend backend)
         {
+            System.Diagnostics.Debug.WriteLine("Set TVM...(ID:" + this.BindingId + ")");
             this._backend = backend;
             this._lastReference = DateTime.Now;
             this._createdAt = backend.CreatedAt;
@@ -55,6 +56,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         internal void ReleaseBackend()
         {
+            System.Diagnostics.Debug.WriteLine("Release TVM...(ID:" + this.BindingId + ")");
             this._backend = null;
         }
 
@@ -84,6 +86,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
                 else 
                 {
                     // DBから取得
+                    System.Diagnostics.Debug.WriteLine("Set TVM...(ID:" + this.BindingId + ")");
                     var be = PerpetuationStorage.GetTweetBackend(this.BindingId);
                     this._backend = be;
                     this._lastReference = DateTime.Now;
@@ -212,12 +215,16 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         #region Retweeteds Control
 
-        private ConcurrentObservable<UserViewModel> _retweeteds = new ConcurrentObservable<UserViewModel>();
+        private object _rtlock = new object();
+
+        private ConcurrentObservable<UserViewModel> _retweeteds = null;
 
         internal void RegisterRetweetedRangeUnsafe(IEnumerable<UserViewModel> users)
         {
-            lock (_retweeteds)
+            lock (_rtlock)
             {
+                if (_retweeteds == null)
+                    _retweeteds = new ConcurrentObservable<UserViewModel>();
                 this._retweeteds.AddRange(users.Except(this._retweeteds));
             }
             RaisePropertyChanged(() => RetweetedUsers);
@@ -225,8 +232,10 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         public bool RegisterRetweeted(UserViewModel user)
         {
-            lock (_retweeteds)
+            lock (_rtlock)
             {
+                if (_retweeteds == null)
+                    _retweeteds = new ConcurrentObservable<UserViewModel>();
                 if (user == null || this._retweeteds.Contains(user))
                     return false;
                 this._retweeteds.Add(user);
@@ -238,79 +247,118 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         public bool RemoveRetweeted(UserViewModel user)
         {
-            lock (_retweeteds)
+            lock (_rtlock)
             {
+                if (_retweeteds == null)
+                    return false;
                 if (user == null || !this._retweeteds.Contains(user))
                     return false;
                 this._retweeteds.Remove(user);
+                if (this._retweeteds.Count == 0)
+                    this._retweeteds = null;
             }
             TweetStorage.NotifyTweetStateChanged(this);
             RaisePropertyChanged(() => RetweetedUsers);
             return true;
         }
 
-        public ConcurrentObservable<UserViewModel> RetweetedUsers
+        public void UpdateRetweeteds()
         {
-            get { return this._retweeteds; }
+            Task.Factory.StartNew(() =>
+                        this.Backend.RetweetedUserIds = this.RetweetedUsers
+                        .Select(vm => vm.BindingId).ToArray());
+        }
+
+        public IEnumerable<UserViewModel> RetweetedUsers
+        {
+            get { return (IEnumerable<UserViewModel>)this._retweeteds ?? new UserViewModel[0]; }
         }
 
         #endregion
 
         #region Favored Control
 
-        private ConcurrentObservable<UserViewModel> _favoreds = new ConcurrentObservable<UserViewModel>();
+        private object _favlock = new object();
+
+        private ConcurrentObservable<UserViewModel> _favoreds = null;
 
         internal void RegisterFavoredRangeUnsafe(IEnumerable<UserViewModel> users)
         {
-            lock (_favoreds)
+            lock (_favlock)
             {
+                if (_favoreds == null)
+                    _favoreds = new ConcurrentObservable<UserViewModel>();
                 this._favoreds.AddRange(users.Except(this._favoreds));
             }
+            UpdateFavoreds();
             RaisePropertyChanged(() => FavoredUsers);
         }
 
         public bool RegisterFavored(UserViewModel user)
         {
-            lock (_favoreds)
+            lock (_favlock)
             {
+                if (_favoreds == null)
+                    _favoreds = new ConcurrentObservable<UserViewModel>();
                 if (user == null || this._favoreds.Contains(user))
                     return false;
                 this._favoreds.Add(user);
             }
             TweetStorage.NotifyTweetStateChanged(this);
+            UpdateFavoreds();
             RaisePropertyChanged(() => FavoredUsers);
             return true;
         }
 
         public bool RemoveFavored(UserViewModel user)
         {
-            lock (_favoreds)
+            lock (_favlock)
             {
+                if (this._favoreds == null)
+                    return false;
                 if (user == null || this._favoreds.Contains(user))
                     this._favoreds.Remove(user);
+                else
+                    return false;
+                if (this._favoreds.Count == 0)
+                    this._favoreds = null;
             }
             TweetStorage.NotifyTweetStateChanged(this);
+            UpdateFavoreds();
             RaisePropertyChanged(() => FavoredUsers);
             return true;
         }
 
-        public ConcurrentObservable<UserViewModel> FavoredUsers
+        private void UpdateFavoreds()
         {
-            get { return this._favoreds; }
+            Task.Factory.StartNew(() =>
+                this.Backend.FavoredUserIds = this.FavoredUsers.Select(vm => vm.BindingId).ToArray());
+        }
+
+        public IEnumerable<UserViewModel> FavoredUsers
+        {
+            get { return (IEnumerable<UserViewModel>)this._favoreds ?? new UserViewModel[0]; }
         }
 
         #endregion
 
         #region Reply Chains Control
 
+        private object _irlock = new object();
+
         /// <summary>
         /// このツイートに返信しているツイートのID
         /// </summary>
-        private ConcurrentBag<long> inReplyFroms = new ConcurrentBag<long>();
+        private ConcurrentBag<long> inReplyFroms = null;
 
         internal void RegisterInReplyFromsUnsafe(long[] ids)
         {
-            ids.ForEach(i => this.inReplyFroms.Add(i));
+            lock (_irlock)
+            {
+                if (inReplyFroms == null)
+                    inReplyFroms = new ConcurrentBag<long>();
+                ids.ForEach(i => this.inReplyFroms.Add(i));
+            }
         }
 
         /// <summary>
@@ -319,8 +367,13 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         /// <param name="tweetId">返信しているツイートのID</param>
         public void RegisterInReplyToThis(long tweetId)
         {
-            this.inReplyFroms.Add(tweetId);
-            TweetStorage.NotifyTweetStateChanged(this);
+            lock (_irlock)
+            {
+                if (inReplyFroms == null)
+                    inReplyFroms = new ConcurrentBag<long>();
+                this.inReplyFroms.Add(tweetId);
+                TweetStorage.NotifyTweetStateChanged(this);
+            }
         }
 
         /// <summary>
@@ -328,7 +381,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         /// </summary>
         public IEnumerable<long> InReplyFroms
         {
-            get { return this.inReplyFroms; }
+            get { return (IEnumerable<long>)this.inReplyFroms ?? new long[0]; }
         }
 
         #endregion
