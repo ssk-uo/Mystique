@@ -25,8 +25,15 @@ namespace Inscribe.ViewModels.Common
                     return new Uri(ud.Backend.ProfileImage);
                 else
                 {
+<<<<<<< HEAD
+                    Task.Factory.StartNew(() =>
+                    {
+                        var info = ApiHelper.ExecApi(() => this._info.GetUserByScreenName(this._info.ScreenName));
+                        if (info != null)
+=======
                     Task.Factory.StartNew(() => {
                         try
+>>>>>>> 827c2c7... bug fix: Cause crashing krile when receiving invalid user information.
                         {
                             var info = ApiHelper.ExecApi(() => this._info.GetUserByScreenName(this._info.ScreenName));
                             if (info != null)

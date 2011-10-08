@@ -34,7 +34,7 @@ namespace Inscribe.Storage
         /// <summary>
         /// ディクショナリのロック
         /// </summary>
-        static ReaderWriterLockWrap lockWrap = new ReaderWriterLockWrap(LockRecursionPolicy.NoRecursion);
+        static ReaderWriterLockWrap lockWrap = new ReaderWriterLockWrap(LockRecursionPolicy.SupportsRecursion);
 
         /// <summary>
         /// 登録済みステータスディクショナリ
@@ -118,15 +118,13 @@ namespace Inscribe.Storage
         /// <returns>条件にマッチするステータス、または登録されているすべてのステータス</returns>
         public static IEnumerable<TweetViewModel> GetAll(Func<TweetViewModel, bool> predicate = null)
         {
-            IEnumerable<TweetViewModel> dav;
             using (lockWrap.GetReaderLock())
             {
-                dav = dictionary.Values.ToArray();
+                if (predicate == null)
+                    return dictionary.Values.ToArray();
+                else
+                    return dictionary.Values.AsParallel().Where(predicate).ToArray();
             }
-            if (predicate == null)
-                return dav;
-            else
-                return dav.AsParallel().Where(predicate).ToArray();
         }
 
         /// <summary>
@@ -333,6 +331,24 @@ namespace Inscribe.Storage
         }
 
         /// <summary>
+        /// ツイートをツイートストレージから除去
+        /// </summary>
+        /// <param name="id">ツイートID</param>
+        public static void Trim(long id)
+        {
+            TweetViewModel remobj = null;
+            using (lockWrap.GetWriterLock())
+            {
+                empties.Remove(id);
+                if (dictionary.TryGetValue(id, out remobj))
+                {
+                    dictionary.Remove(id);
+                    Task.Factory.StartNew(() => RaiseStatusRemoved(remobj));
+                }
+            }
+        }
+
+        /// <summary>
         /// ツイートの削除
         /// </summary>
         /// <param name="id">削除するツイートID</param>
@@ -461,7 +477,7 @@ namespace Inscribe.Storage
 
         #endregion
     }
-    
+
 
     public class TweetStorageChangedEventArgs : EventArgs
     {
