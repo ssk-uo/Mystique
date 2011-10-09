@@ -28,12 +28,9 @@ namespace Inscribe.ViewModels.Common
                     Task.Factory.StartNew(() => {
                         try
                         {
-                            var info = ApiHelper.ExecApi(() => this._info.GetUserByScreenName(this._info.ScreenName));
+                            var info = UserStorage.Get(this._info.ScreenName);
                             if (info != null)
-                            {
-                                UserStorage.Register(info);
                                 RaisePropertyChanged(() => ProfileImage);
-                            }
                         }
                         catch (Exception e)
                         {

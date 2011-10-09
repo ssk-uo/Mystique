@@ -99,18 +99,22 @@ namespace Inscribe.Communication.UserStreams
                     TweetStorage.Register(elem.Status);
                     break;
                 case ElementKind.Favorite:
-                    var avm = TweetStorage.Register(elem.Status);
-                    if (avm == null) return;
-                    var uavm = UserStorage.Get(elem.SourceUser);
-                    if (avm.RegisterFavored(uavm))
-                        EventStorage.OnFavored(avm, uavm);
+                    TweetStorage.Register(elem.Status).ContinueWith(t =>
+                        {
+                            if (t.Result == null) return;
+                            var uavm = UserStorage.Get(elem.SourceUser);
+                            if (t.Result.RegisterFavored(uavm))
+                                EventStorage.OnFavored(t.Result, uavm);
+                        });
                     break;
                 case ElementKind.Unfavorite:
-                    var rvm = TweetStorage.Register(elem.Status);
-                    if (rvm == null) return;
-                    var urvm = UserStorage.Get(elem.SourceUser);
-                    if (rvm.RemoveFavored(urvm))
-                        EventStorage.OnUnfavored(rvm, urvm);
+                    TweetStorage.Register(elem.Status).ContinueWith(t =>
+                        {
+                            if (t.Result == null) return;
+                            var urvm = UserStorage.Get(elem.SourceUser);
+                            if (t.Result.RemoveFavored(urvm))
+                                EventStorage.OnUnfavored(t.Result, urvm);
+                        });
                     break;
                 case ElementKind.Delete:
                     TweetStorage.Remove(elem.DeletedStatusId);

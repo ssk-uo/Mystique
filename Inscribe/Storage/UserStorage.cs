@@ -26,10 +26,10 @@ namespace Inscribe.Storage
         {
             if (userScreenName == null)
                 throw new ArgumentNullException("userScreenName");
-            using (lockWrap.GetReaderLock())
-            {
-                return dictionary.Values.Where(u => u.Backend.ScreenName == userScreenName).FirstOrDefault();
-            }
+            return Lookup(PerpetuationStorage.EnterLockWhenInitialized(() => 
+                PerpetuationStorage.Users
+                .Where(u => u.ScreenName.ToLower() == userScreenName.ToLower())
+                .Select(u => u.Id).FirstOrDefault()));
         }
 
         public static UserViewModel Lookup(long id)
@@ -55,30 +55,31 @@ namespace Inscribe.Storage
         {
             if (user == null)
                 throw new ArgumentNullException("user");
-            using (lockWrap.GetUpgradableReaderLock())
+            UserViewModel uvm;
+            using (lockWrap.GetReaderLock())
             {
-                UserViewModel uvm;
-                if (dictionary.TryGetValue(user.NumericId, out uvm))
+                dictionary.TryGetValue(user.NumericId, out uvm);
+            }
+            if (uvm != null)
+            {
+                var be = uvm.Backend;
+                if (be != null)
                 {
-                    var be = uvm.Backend;
-                    if (be != null)
-                    {
-                        be.Overwrite(user);
-                        PerpetuationStorage.UserSaveChange();
-                    }
-                    return uvm;
+                    be.Overwrite(user);
+                    PerpetuationStorage.SaveChange();
                 }
-                // register
-                var newvm = new UserViewModel(new UserBackend(user));
-                System.Diagnostics.Debug.WriteLine("register:" + user.NumericId);
-                PerpetuationStorage.AddUserBackend(newvm.Backend);
-                using (lockWrap.GetWriterLock())
+                return uvm;
+            }
+            // register
+            var newvm = new UserViewModel(new UserBackend(user));
+            using (lockWrap.GetWriterLock())
+            {
+                if (!dictionary.ContainsKey(user.NumericId) && PerpetuationStorage.AddUserBackend(newvm.Backend))
                 {
                     dictionary.Add(user.NumericId, newvm);
                 }
-                Task.Factory.StartNew(() => ReleaseCacheIfNeeded());
-                return newvm;
             }
+            return newvm;
         }
 
         /// <summary>
@@ -135,20 +136,64 @@ namespace Inscribe.Storage
 
         #region Cache control
 
-        public static void ReleaseCacheIfNeeded()
+        private static long _cachedCount = 0;
+
+        /// <summary>
+        /// ツイートキャッシュが追加されたことを通知します。
+        /// </summary>
+        public static void AddCacheCount()
+        {
+            var count = Interlocked.Increment(ref _cachedCount);
+            if (!Setting.IsInitialized || Setting.Instance.KernelProperty.TweetCacheMaxCount == 0) return;
+            if (count > Setting.Instance.KernelProperty.TweetCacheMaxCount)
+                ReleaseCacheIfNeeded();
+        }
+
+        /// <summary>
+        /// ツイートキャッシュが解放されたことを通知します。
+        /// </summary>
+        public static void ReleaseCacheCount()
+        {
+            Interlocked.Decrement(ref _cachedCount);
+        }
+
+        private static int _isReleasing = 0;
+
+        /// <summary>
+        /// 必要であればキャッシュを削除し、メモリ領域を解放します。
+        /// </summary>
+        private static void ReleaseCacheIfNeeded()
         {
             if (!Setting.IsInitialized || Setting.Instance.KernelProperty.UserCacheMaxCount == 0) return;
-            UserViewModel[] releases = null;
-            using (lockWrap.GetUpgradableReaderLock())
+            if (Interlocked.Exchange(ref _isReleasing, 1) == 1) return;
+            try
             {
-                releases = dictionary.Values.Where(uvm => uvm.IsBackendAlive).ToArray();
+                UserViewModel[] releases = null;
+                using (lockWrap.GetUpgradableReaderLock())
+                {
+                    releases = dictionary.Values.Where(uvm => uvm.IsBackendAlive).ToArray();
+                }
+                if (releases.Length > Setting.Instance.KernelProperty.UserCacheMaxCount)
+                {
+                    Task.Factory.StartNew(() =>
+                        {
+                            using (NotifyStorage.NotifyManually("ユーザーキャッシュを最適化しています..."))
+                            {
+                                releases
+                                    .OrderByDescending(uvm => uvm.LastReference)
+                                    .Skip((int)(Setting.Instance.KernelProperty.UserCacheMaxCount * Setting.Instance.KernelProperty.UserCacheSurviveDensity))
+                                    .ForEach(uvm =>
+                                    {
+                                        uvm.ReleaseBackend();
+                                        Thread.Sleep(0);
+                                    });
+                            }
+                        });
+                }
             }
-            if (releases.Length > Setting.Instance.KernelProperty.UserCacheMaxCount)
+            finally
             {
-                Task.Factory.StartNew(() => releases
-                    .OrderByDescending(uvm => uvm.LastReference)
-                    .Skip((int)(Setting.Instance.KernelProperty.UserCacheMaxCount * Setting.Instance.KernelProperty.UserCacheSurviveDensity))
-                    .ForEach(uvm => uvm.ReleaseBackend()));
+                _isReleasing = 0;
             }
         }
 

@@ -3,6 +3,7 @@ using System.Data.Entity.Infrastructure;
 using System.IO;
 using System.Linq;
 using Inscribe.Common;
+using System;
 
 namespace Inscribe.Storage.Perpetuation
 {
@@ -14,7 +15,6 @@ namespace Inscribe.Storage.Perpetuation
         static object dblock = new object();
 
         static PerpetuationDatabase database;
-
 
         internal static void ConnectDB()
         {
@@ -29,7 +29,7 @@ namespace Inscribe.Storage.Perpetuation
             }
         }
 
-        internal static void AddTweetBackend(TweetBackend tbe)
+        internal static bool AddTweetBackend(TweetBackend tbe)
         {
             lock (dblock)
             {
@@ -37,6 +37,11 @@ namespace Inscribe.Storage.Perpetuation
                 {
                     database.TweetSet.Add(tbe);
                     database.SaveChanges();
+                    return true;
+                }
+                else
+                {
+                    return false;
                 }
             }
         }
@@ -52,16 +57,7 @@ namespace Inscribe.Storage.Perpetuation
             }
         }
 
-        internal static void TweetSaveChange()
-        {
-            lock (dblock)
-            {
-                if (database != null)
-                    database.SaveChanges();
-            }
-        }
-
-        internal static void AddUserBackend(UserBackend ube)
+        internal static bool AddUserBackend(UserBackend ube)
         {
             lock (dblock)
             {
@@ -69,6 +65,11 @@ namespace Inscribe.Storage.Perpetuation
                 {
                     database.UserSet.Add(ube);
                     database.SaveChanges();
+                    return true;
+                }
+                else
+                {
+                    return false;
                 }
             }
         }
@@ -84,7 +85,7 @@ namespace Inscribe.Storage.Perpetuation
             }
         }
 
-        internal static void UserSaveChange()
+        internal static void SaveChange()
         {
             lock (dblock)
             {
@@ -99,6 +100,47 @@ namespace Inscribe.Storage.Perpetuation
             {
                 database.Dispose();
                 database = null;
+            }
+        }
+
+        public static void EnterLock(Action doInLock)
+        {
+            lock (dblock)
+            {
+                doInLock();
+            }
+        }
+
+        public static T EnterLockWhenInitialized<T>(Func<T> doInLock)
+        {
+            lock (dblock)
+            {
+                if (database == null)
+                    return default(T);
+                else
+                    return doInLock();
+            }
+        }
+
+        public static IQueryable<TweetBackend> Tweets
+        {
+            get
+            {
+                if (database == null)
+                    return null;
+                else
+                    return database.TweetSet;
+            }
+        }
+
+        public static IQueryable<UserBackend> Users
+        {
+            get
+            {
+                if (database == null)
+                    return null;
+                else
+                    return database.UserSet;
             }
         }
     }

@@ -16,6 +16,7 @@ using Inscribe.Configuration;
 using Inscribe.Storage;
 using Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild;
 using Livet;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Communication.Posting
 {
@@ -80,19 +81,15 @@ namespace Inscribe.Communication.Posting
 
                 // 127tweet/3hours
                 var uid = info.Id;
-                var originate = TweetStorage.GetAll(
-                    t => t.BindingId == uid && DateTime.Now.Subtract(t.CreatedAt) < TwitterDefine.UnderControlTimespan)
-                    .OrderByDescending((t) => t.CreatedAt)
-                    .Skip(TwitterDefine.UnderControlCount - 1)
-                    .FirstOrDefault();
+                var ovs = PerpetuationStorage.EnterLockWhenInitialized(() =>
+                    PerpetuationStorage.Tweets.Where(be => be.UserId == uid).Select(be => be.CreatedAt).ToArray())
+                   .Where(d => DateTime.Now.Subtract(d) < TwitterDefine.UnderControlTimespan)
+                   .OrderByDescending(d => d)
+                   .ToArray();
 
+                var originate = ovs.Skip(TwitterDefine.UnderControlCount - 1).FirstOrDefault();
                 if (originate == null)
-                {
-                    originate = TweetStorage.GetAll(
-                        t => t.BindingId == uid && DateTime.Now.Subtract(t.CreatedAt) < TwitterDefine.UnderControlTimespan)
-                        .OrderByDescending((t) => t.CreatedAt)
-                        .LastOrDefault();
-                }
+                    originate = ovs.LastOrDefault();
 
                 if (originate == null)
                 {
@@ -100,7 +97,7 @@ namespace Inscribe.Communication.Posting
                 }
                 else
                 {
-                    var release = (originate.CreatedAt + TwitterDefine.UnderControlTimespan);
+                    var release = (originate + TwitterDefine.UnderControlTimespan);
                     NotifyStorage.Notify("[規制管理: @" + info.ScreenName +
                         " はPOST規制されています。解除予想時刻は " + release.ToString("HH:mm:ss") + " です。]");
                     underControls.AddOrUpdate(info, release);
@@ -165,9 +162,12 @@ namespace Inscribe.Communication.Posting
         {
             var uid = info.Id;
             // とりあえずこのユーザーの全ツイートを持ってくる
-            var times = TweetStorage.GetAll(t => t.BindingId == uid)
-                .Select(t => t.CreatedAt)
-                .OrderByDescending(t => t) // 新着順に並べる
+            var times = PerpetuationStorage.EnterLockWhenInitialized(() =>
+                PerpetuationStorage.Tweets.Where(be => be.UserId == uid)
+                .Select(be => be.CreatedAt)
+                .ToArray())
+                .Where(d => DateTime.Now.Subtract(d) < TwitterDefine.UnderControlTimespan)
+                .OrderByDescending(d => d)
                 .ToArray();
 
             bool initPointFound = false;
@@ -300,9 +300,58 @@ namespace Inscribe.Communication.Posting
 
         private static int UpdateTweetSink(AccountInfo info, string text, long? inReplyToId = null)
         {
-            var status = info.UpdateStatus(text, inReplyToId);
+            TwitterStatus status = null;
+            for (int i = 0; i < 5; i++)
+            {
+                try
+                {
+                    status = info.UpdateStatus(text, inReplyToId);
+                }
+                catch (WebException wex)
+                {
+                    if (wex.Status == WebExceptionStatus.ProtocolError)
+                    {
+                        var hrw = wex.Response as HttpWebResponse;
+                        if (hrw != null && hrw.StatusCode == HttpStatusCode.Forbidden)
+                        {
+                            // 重複した?
+                            using (var strm = hrw.GetResponseStream())
+                            using (var json = JsonReaderWriterFactory.CreateJsonReader(strm,
+                                System.Xml.XmlDictionaryReaderQuotas.Max))
+                            {
+                                var xdoc = XDocument.Load(json);
+                                System.Diagnostics.Debug.WriteLine(xdoc);
+                                var eel = xdoc.Root.Element("error");
+                                if (eel != null &&
+                                    eel.Value.IndexOf("duplicate", StringComparison.CurrentCultureIgnoreCase) >= 0)
+                                {
+                                    // 同じツイートをしようとした
+                                    if (i == 0) // 初回でこのエラーならアウト
+                                    {
+                                        throw;
+                                    }
+                                    else
+                                    {
+                                        NotifyStorage.Notify("ツイートしました:@" + info.ScreenName + ": " + text);
+                                        var ucchunk = GetUnderControlChunk(info);
+                                        if (ucchunk.Item2 > TwitterDefine.UnderControlWarningThreshold)
+                                        {
+                                            throw new TweetAnnotationException(TweetAnnotationException.AnnotationKind.NearUnderControl);
+                                        }
+                                        return ucchunk.Item2;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (wex.Status == WebExceptionStatus.Timeout)
+                        continue;
+                    else
+                        throw;
+                }
+            }
             if (status == null || status.Id == 0)
-                throw new InvalidOperationException("ツイートの成功を確認できませんでした。");
+                throw new InvalidOperationException("ツイートの成功を確認できませんでした。タイムアウトした可能性があります。");
             TweetStorage.Register(status);
             NotifyStorage.Notify("ツイートしました:@" + info.ScreenName + ": " + text);
 
@@ -593,10 +642,12 @@ namespace Inscribe.Communication.Posting
         private static void RemoveRetweetCore(AccountInfo d, TweetViewModel status)
         {
             // リツイートステータスの特定
-            var rts = TweetStorage.GetAll(vm =>
-                vm.ScreenName == d.ScreenName &&
-                vm.Backend.RetweetedOriginalId != 0 &&
-                vm.Backend.RetweetedOriginalId == status.Backend.Id).FirstOrDefault();
+            var rts = PerpetuationStorage.EnterLockWhenInitialized(() =>
+                PerpetuationStorage.Tweets.Where(tb =>
+                   tb.RetweetedOriginalId == status.Backend.Id).Select(vm => vm.Id).ToArray())
+                   .Select(t => TweetStorage.Get(t))
+                   .Where(vm => vm != null)
+                   .Where(vm => vm.ScreenName == d.ScreenName).FirstOrDefault();
             if (rts == null || ApiHelper.ExecApi(() => d.DestroyStatus(rts.BindingId) == null))
                 throw new ApplicationException();
         }

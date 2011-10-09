@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Livet;
-using Dulcet.Twitter;
-using Livet.Commands;
-using Inscribe.Storage.Perpetuation;
+using System.Threading;
 using System.Threading.Tasks;
 using Inscribe.Storage;
+using Inscribe.Storage.Perpetuation;
+using Livet;
+using Inscribe.Configuration;
+using Inscribe.Configuration.Settings;
 
 namespace Inscribe.ViewModels.PartBlocks.MainBlock
 {
@@ -33,13 +31,17 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
 
         internal void SetBackend(UserBackend backend)
         {
-            this._backend = backend;
+            if (this._backend != null) return;
+            if (Interlocked.Exchange(ref _backend, backend) == null)
+                Task.Factory.StartNew(() => UserStorage.AddCacheCount());
             this._lastReference = DateTime.Now;
         }
 
         internal void ReleaseBackend()
         {
-            this._backend = null;
+            if (this._backend == null) return;
+            if (Interlocked.Exchange(ref _backend, null) != null)
+                UserStorage.ReleaseCacheCount();
         }
 
         private DateTime _lastReference;
@@ -56,6 +58,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
                 throw new NullReferenceException("user");
             this._backend = user;
             this.BindingId = user.Id;
+            Task.Factory.StartNew(() => UserStorage.AddCacheCount());
         }
 
         public long BindingId { get; private set; }
@@ -77,10 +80,10 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
                 {
                     // from DB
                     var be = PerpetuationStorage.GetUserBackend(this.BindingId);
-                    this._backend = be;
+                    if (Interlocked.Exchange(ref _backend, be) == null)
+                        Task.Factory.StartNew(() => UserStorage.AddCacheCount());
                     this._lastReference = DateTime.Now;
                     RaisePropertyChanged(() => Backend);
-                    Task.Factory.StartNew(() => UserStorage.ReleaseCacheIfNeeded());
                     return be;
                 }
             }
@@ -96,5 +99,69 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         {
             return (int)this.BindingId;
         }
+
+
+        #region User Names
+
+        private static string GetUserName(UserViewModel user)
+        {
+            return user.Backend.UserName;
+        }
+
+        private static string GetScreenName(UserViewModel user)
+        {
+            return user.Backend.ScreenName;
+        }
+
+        public string Name
+        {
+            get { return GetUserName(this); }
+        }
+
+        public string ScreenName
+        {
+            get { return GetScreenName(this); }
+        }
+
+        public string RetweetedScreenName
+        {
+            get { return this.Backend.ScreenName; }
+        }
+
+        public string ViewName
+        {
+            get
+            {
+                switch (Setting.Instance.TweetExperienceProperty.UserNameViewMode)
+                {
+                    case NameView.ID:
+                        return GetScreenName(this);
+                    case NameView.Name:
+                        return GetUserName(this);
+                    case NameView.Both:
+                    default:
+                        return GetScreenName(this) + " (" + GetUserName(this) + ")";
+                }
+            }
+        }
+
+        public string NotifyViewName
+        {
+            get
+            {
+                switch (Setting.Instance.TweetExperienceProperty.NotificationNameViewMode)
+                {
+                    case NameView.ID:
+                        return GetScreenName(this);
+                    case NameView.Name:
+                        return GetUserName(this);
+                    case NameView.Both:
+                    default:
+                        return GetScreenName(this) + " (" + GetUserName(this) + ")";
+                }
+            }
+        }
+
+        #endregion
     }
 }

@@ -12,6 +12,7 @@ using Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild;
 using Livet;
 using Dulcet.Twitter;
 using System.Threading;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.ViewModels.PartBlocks.MainBlock
 {
@@ -191,11 +192,16 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
 
         public bool CheckFilters(TweetViewModel viewModel)
         {
+            if (!viewModel.IsStatusInfoContains) return false;
+            return CheckFilterSink(viewModel.Backend);
+        }
+
+        private bool CheckFilterSink(TweetBackend be)
+        {
             try
             {
-                if (!viewModel.IsStatusInfoContains) return false;
                 return (this.sources ?? this.Parent.TabProperty.TweetSources ?? new IFilter[0])
-                    .Any(f => f.Filter(viewModel.Backend));
+                    .Any(f => f.Filter(be));
             }
             catch (Exception ex)
             {
@@ -215,6 +221,16 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
             this._tweetsSource.Clear();
             var collection = TweetStorage.GetAll(vm => CheckFilters(vm))
                 .Select(tvm => new TabDependentTweetViewModel(tvm, this.Parent));
+            /*
+            var collection = PerpetuationStorage.EnterLock(() =>
+                PerpetuationStorage.Tweets
+                .Where(be => CheckFilterSink(be))
+                .Select(be => be.Id)
+                .ToArray())
+                .Select(id => TweetStorage.Get(id))
+                .Where(vm => vm != null)
+                .Select(vm => new TabDependentTweetViewModel(vm, this.Parent)).ToArray();
+            */
             Timer timer = null;
             try
             {

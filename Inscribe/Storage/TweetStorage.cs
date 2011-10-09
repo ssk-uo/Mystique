@@ -34,12 +34,14 @@ namespace Inscribe.Storage
         /// <summary>
         /// ディクショナリのロック
         /// </summary>
-        static ReaderWriterLockWrap lockWrap = new ReaderWriterLockWrap(LockRecursionPolicy.SupportsRecursion);
+        static ReaderWriterLockWrap dicLockWrap = new ReaderWriterLockWrap(LockRecursionPolicy.SupportsRecursion);
 
         /// <summary>
         /// 登録済みステータスディクショナリ
         /// </summary>
         static Dictionary<long, TweetViewModel> dictionary = new Dictionary<long, TweetViewModel>();
+
+        static ReaderWriterLockWrap edLockWrap = new ReaderWriterLockWrap(LockRecursionPolicy.SupportsRecursion);
 
         /// <summary>
         /// 仮登録ステータスディクショナリ
@@ -67,7 +69,8 @@ namespace Inscribe.Storage
         /// </summary>
         public static TweetExistState Contains(long id)
         {
-            using (lockWrap.GetReaderLock())
+            using (dicLockWrap.GetReaderLock())
+            using (edLockWrap.GetReaderLock())
             {
                 System.Diagnostics.Debug.WriteLine("contains");
                 if (dictionary.ContainsKey(id))
@@ -88,7 +91,8 @@ namespace Inscribe.Storage
         /// <param name="createEmpty">存在しないとき、空のViewModelを作って登録して返す</param>
         public static TweetViewModel Get(long id, bool createEmpty = false)
         {
-            using (createEmpty ? lockWrap.GetUpgradableReaderLock() : lockWrap.GetReaderLock())
+            using (dicLockWrap.GetReaderLock())
+            using (createEmpty ? edLockWrap.GetUpgradableReaderLock() : edLockWrap.GetReaderLock())
             {
                 TweetViewModel ret;
                 if (dictionary.TryGetValue(id, out ret))
@@ -97,7 +101,7 @@ namespace Inscribe.Storage
                     return ret;
                 if (createEmpty)
                 {
-                    using (lockWrap.GetWriterLock())
+                    using (edLockWrap.GetWriterLock())
                     {
                         var nvm = new TweetViewModel(id);
                         empties.Add(id, nvm);
@@ -118,7 +122,7 @@ namespace Inscribe.Storage
         /// <returns>条件にマッチするステータス、または登録されているすべてのステータス</returns>
         public static IEnumerable<TweetViewModel> GetAll(Func<TweetViewModel, bool> predicate = null)
         {
-            using (lockWrap.GetReaderLock())
+            using (dicLockWrap.GetReaderLock())
             {
                 if (predicate == null)
                     return dictionary.Values.ToArray();
@@ -128,13 +132,18 @@ namespace Inscribe.Storage
         }
 
         /// <summary>
+        /// カウンタキャッシュ
+        /// </summary>
+        private static volatile int _count = 0;
+
+        /// <summary>
         /// 登録されているツイートの個数を取得します。
         /// </summary>
-        public static int Count()
+        public static int Count
         {
-            using (lockWrap.GetReaderLock())
+            get
             {
-                return dictionary.Count;
+                return _count;
             }
         }
 
@@ -142,10 +151,27 @@ namespace Inscribe.Storage
         /// 受信したツイートを登録します。<para />
         /// 諸々の処理を自動で行います。
         /// </summary>
-        public static TweetViewModel Register(TwitterStatusBase statusBase)
+        public static Task<TweetViewModel> Register(TwitterStatusBase statusBase)
+        {
+            TweetViewModel generated = null;
+            Task<TweetViewModel> result = new Task<TweetViewModel>(() => generated);
+            operationDispatcher.Enqueue(() =>
+            {
+                generated = RegisterSink(statusBase);
+                result.Start();
+            });
+            return result;
+        }
+
+
+        /// <summary>
+        /// 受信したツイートを登録します。<para />
+        /// 同期的に処理されます。
+        /// </summary>
+        private static TweetViewModel RegisterSink(TwitterStatusBase statusBase)
         {
             TweetViewModel robj;
-            using (lockWrap.GetReaderLock())
+            using (dicLockWrap.GetReaderLock())
             {
                 if (dictionary.TryGetValue(statusBase.Id, out robj))
                     return robj;
@@ -177,7 +203,7 @@ namespace Inscribe.Storage
             if (status.RetweetedOriginal != null)
             {
                 // リツイートのオリジナルステータスを登録
-                var vm = Register(status.RetweetedOriginal);
+                var vm = RegisterSink(status.RetweetedOriginal);
 
                 // リツイートユーザーに登録
                 var user = UserStorage.Get(status.User);
@@ -203,9 +229,7 @@ namespace Inscribe.Storage
             var registered = RegisterCore(status);
 
             if (TwitterHelper.IsMentionOfMe(status))
-            {
                 EventStorage.OnMention(registered);
-            }
             return registered;
         }
 
@@ -226,15 +250,16 @@ namespace Inscribe.Storage
         /// </summary>
         private static TweetViewModel RegisterCore(TwitterStatusBase statusBase)
         {
+            PreProcess(statusBase);
             TweetViewModel viewModel;
-            using (lockWrap.GetUpgradableReaderLock())
+            using (edLockWrap.GetUpgradableReaderLock())
             {
                 if (empties.TryGetValue(statusBase.Id, out viewModel))
                 {
                     // 既にViewModelが生成済み
                     if (!viewModel.IsStatusInfoContains)
                         viewModel.SetBackend(new Perpetuation.TweetBackend(statusBase));
-                    using (lockWrap.GetWriterLock())
+                    using (edLockWrap.GetWriterLock())
                     {
                         empties.Remove(statusBase.Id);
                     }
@@ -242,14 +267,15 @@ namespace Inscribe.Storage
                 else
                 {
                     // 全く初めて触れるステータス
+                    _count++;
                     viewModel = new TweetViewModel(new Perpetuation.TweetBackend(statusBase));
                 }
             }
             if (ValidateTweet(viewModel))
             {
                 // プリプロセッシング
-                PreProcess(statusBase);
-                using (lockWrap.GetUpgradableReaderLock())
+                using (dicLockWrap.GetUpgradableReaderLock())
+                using (edLockWrap.GetReaderLock())
                 {
                     if (!deleteReserveds.Contains(statusBase.Id))
                     {
@@ -259,16 +285,16 @@ namespace Inscribe.Storage
                         }
                         else
                         {
-                            PerpetuationStorage.AddTweetBackend(viewModel.Backend);
-                            using (lockWrap.GetWriterLock())
+                            if (PerpetuationStorage.AddTweetBackend(viewModel.Backend))
                             {
-                                dictionary.Add(statusBase.Id, viewModel);
+                                using (dicLockWrap.GetWriterLock())
+                                {
+                                    dictionary.Add(statusBase.Id, viewModel);
+                                }
                             }
-                            Task.Factory.StartNew(() => ReleaseCacheIfNeeded());
                         }
-                    }
-                    if (!deleteReserveds.Contains(statusBase.Id))
                         Task.Factory.StartNew(() => RaiseStatusAdded(viewModel));
+                    }
                 }
             }
             else
@@ -337,7 +363,8 @@ namespace Inscribe.Storage
         public static void Trim(long id)
         {
             TweetViewModel remobj = null;
-            using (lockWrap.GetWriterLock())
+            using (dicLockWrap.GetWriterLock())
+            using (edLockWrap.GetWriterLock())
             {
                 empties.Remove(id);
                 if (dictionary.TryGetValue(id, out remobj))
@@ -355,7 +382,8 @@ namespace Inscribe.Storage
         public static void Remove(long id)
         {
             TweetViewModel remobj = null;
-            using (lockWrap.GetWriterLock())
+            using (dicLockWrap.GetWriterLock())
+            using (edLockWrap.GetWriterLock())
             {
                 System.Diagnostics.Debug.WriteLine("rmv");
                 // 削除する
@@ -455,23 +483,65 @@ namespace Inscribe.Storage
 
         #region Cache control
 
+        private static long _cachedCount = 0;
+
+        /// <summary>
+        /// ツイートキャッシュが追加されたことを通知します。
+        /// </summary>
+        public static void AddCacheCount()
+        {
+            var count = Interlocked.Increment(ref _cachedCount);
+            if (!Setting.IsInitialized || Setting.Instance.KernelProperty.TweetCacheMaxCount == 0) return;
+            if (count > Setting.Instance.KernelProperty.TweetCacheMaxCount)
+                ReleaseCacheIfNeeded();
+        }
+
+        /// <summary>
+        /// ツイートキャッシュが解放されたことを通知します。
+        /// </summary>
+        public static void ReleaseCacheCount()
+        {
+            Interlocked.Decrement(ref _cachedCount);
+        }
+
+        private static int _isReleasing = 0;
+
         /// <summary>
         /// 必要であればキャッシュを削除し、メモリ領域を解放します。
         /// </summary>
-        public static void ReleaseCacheIfNeeded()
+        private static void ReleaseCacheIfNeeded()
         {
             if (!Setting.IsInitialized || Setting.Instance.KernelProperty.TweetCacheMaxCount == 0) return;
-            TweetViewModel[] releases = null;
-            using (lockWrap.GetUpgradableReaderLock())
+            if (Interlocked.Exchange(ref _isReleasing, 1) == 1) return;
+            try
             {
-                releases = dictionary.Values.Where(uvm => uvm.IsBackendAlive).ToArray();
+                TweetViewModel[] releases = null;
+                using (dicLockWrap.GetUpgradableReaderLock())
+                {
+                    releases = dictionary.Values.Where(uvm => uvm.IsBackendAlive).ToArray();
+                }
+                Interlocked.Exchange(ref _cachedCount, releases.Length);
+                if (releases.Length > Setting.Instance.KernelProperty.TweetCacheMaxCount)
+                {
+                    Task.Factory.StartNew(() =>
+                    {
+                        using (NotifyStorage.NotifyManually("ツイートキャッシュを最適化しています..."))
+                        {
+                            releases
+                                .OrderByDescending(tvm => tvm.LastReference)
+                                .Skip((int)(Setting.Instance.KernelProperty.TweetCacheMaxCount * Setting.Instance.KernelProperty.TweetCacheSurviveDensity))
+                                .ForEach(uvm =>
+                                {
+                                    uvm.ReleaseBackend();
+                                    Thread.Sleep(0);
+                                });
+                        }
+                    });
+                }
             }
-            if (releases.Length > Setting.Instance.KernelProperty.TweetCacheMaxCount)
+            finally
             {
-                Task.Factory.StartNew(() => releases
-                    .OrderByDescending(tvm => tvm.LastReference)
-                    .Skip((int)(Setting.Instance.KernelProperty.TweetCacheMaxCount * Setting.Instance.KernelProperty.TweetCacheSurviveDensity))
-                    .ForEach(uvm => uvm.ReleaseBackend()));
+                _isReleasing = 0;
             }
         }
 

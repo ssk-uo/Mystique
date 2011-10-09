@@ -70,7 +70,7 @@ namespace Inscribe.ViewModels.PartBlocks.NotifyBlock
 
         public int Tweets
         {
-            get { return TweetStorage.Count(); }
+            get { return TweetStorage.Count; }
         }
 
         public string WakeupTime

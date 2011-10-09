@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using Inscribe.Storage;
 using Livet;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.Core
 {
@@ -27,14 +28,18 @@ namespace Inscribe.Core
             wakeUpTimeUpdate = new Timer(WakeupTimeUpdateSink, null, 0, 1000);
         }
 
+        private static bool _isUpdatingSpeed = false;
         private static void TweetSpeedUpdateSink(object o)
         {
+            if (_isUpdatingSpeed) return;
+            _isUpdatingSpeed = true;
             // 鳥人
+            var tweettimes= PerpetuationStorage.EnterLockWhenInitialized(() => PerpetuationStorage.Tweets.Select(b => b.CreatedAt).ToArray());
             var morigin = (DateTime.Now - new TimeSpan(0, 1, 0));
-            TweetSpeedPerMin = TweetStorage.GetAll((t) => t.CreatedAt > morigin).Count();
+            TweetSpeedPerMin = tweettimes.Count(t => t > morigin);
             var horigin = (DateTime.Now - new TimeSpan(1, 0, 0));
-            TweetSpeedPerHour = TweetStorage.GetAll((t) => t.CreatedAt > horigin).Count();
-            System.Diagnostics.Debug.WriteLine(morigin.ToString() + " / " + horigin.ToString());
+            TweetSpeedPerHour = tweettimes.Count(t => t > horigin);
+            _isUpdatingSpeed = false;
             OnTweetSpeedUpdated(EventArgs.Empty);
         }
 
@@ -66,7 +71,6 @@ namespace Inscribe.Core
 
         #endregion
 
-
         #region WakeupTimeUpdatedイベント
 
         public static event EventHandler<EventArgs> WakeupTimeUpdated;
@@ -89,7 +93,6 @@ namespace Inscribe.Core
         }
 
         #endregion
-
 
         public static int TweetSpeedPerMin { get; private set; }
 

@@ -20,8 +20,6 @@
              mc:Ignorable="d">
     <UserControl.Resources>
         <cp:TextToInlinesConverter x:Key="TextFlowDocumentConverter" />
-        <cp:TVMToUserNameConverter x:Key="TweetUserNameConverter" />
-        <cp:TVMToUserImageConverter x:Key="TweetUserImageConverter" />
         <cp:CollectionToCountConverter x:Key="CollectionCountConverter" />
         <cp:CollectionExistToVisibleConverter x:Key="CollectionExistVisibleConverter" />
         <cp:SourceToInlinesConverter x:Key="SourceInlinesConverter" />
@@ -229,9 +227,8 @@
             <Grid>
                 <com:LazyImage Width="48"
                                Height="48"
-                               UriSource="{Binding Path=Tweet,
-                                                   Converter={StaticResource TweetUserImageConverter},
-                                                   ConverterParameter=Suggested}">
+                               UriSource="{Binding Path=Tweet.SuggestedProfileImage,
+                                                   IsAsync=True}">
                     <i:Interaction.Behaviors>
                         <b:DragDropBehavior DragDropData="{Binding Path=Tweet}"
                                             OnClickCommand="{Binding ClickUserIconCommand}"
@@ -271,9 +268,8 @@
             <Grid HorizontalAlignment="Left" Visibility="{Binding Path=Tweet.IsPublishedByRetweet, Converter={StaticResource BoolVisibleConverter}}">
                 <com:LazyImage Width="40"
                                Height="40"
-                               UriSource="{Binding Path=Tweet,
-                                                   Converter={StaticResource TweetUserImageConverter},
-                                                   ConverterParameter=Retweeted}">
+                               UriSource="{Binding Path=Tweet.RetweetedProfileImage,
+                                                   IsAsync=True}">
                     <com:LazyImage.InputBindings>
                         <MouseBinding Command="{Binding Path=RetweetedUserDetailCommand}" MouseAction="LeftClick" />
                     </com:LazyImage.InputBindings>
@@ -287,9 +283,8 @@
             <Grid HorizontalAlignment="Left" Visibility="{Binding Path=Tweet.IsDirectMessage, Converter={StaticResource BoolVisibleConverter}}">
                 <com:LazyImage Width="40"
                                Height="40"
-                               UriSource="{Binding Path=Tweet,
-                                                   Converter={StaticResource TweetUserImageConverter},
-                                                   ConverterParameter=DirectMessageRecipient}">
+                               UriSource="{Binding Path=Tweet.DMReceipientProfileImage,
+                                                   IsAsync=True}">
                     <com:LazyImage.InputBindings>
                         <MouseBinding Command="{Binding Path=DirectMessageReceipientDetailCommand}" MouseAction="LeftClick" />
                     </com:LazyImage.InputBindings>
@@ -311,10 +306,10 @@
             <TextBlock Margin="4,2" Foreground="Blue">
                 <Hyperlink Command="{Binding Path=ShowUserDetailCommand}">
                     <Bold>
-                        <Run Text="{Binding Path=Tweet, Converter={StaticResource TweetUserNameConverter}, ConverterParameter=ScreenName, Mode=OneWay}" />
+                        <Run Text="{Binding Path=Tweet.SuggestedScreenName, Mode=OneWay}" />
                     </Bold>
                 </Hyperlink>
-                <Run Foreground="Gray" Text="{Binding Path=Tweet, Converter={StaticResource TweetUserNameConverter}, ConverterParameter=Name, Mode=OneWay}" />
+                <Run Foreground="Gray" Text="{Binding Path=Tweet.SuggestedName, IsAsync=True, Mode=OneWay}" />
             </TextBlock>
             <TextBlock Margin="4,2"
                        Foreground="Gray"
@@ -331,7 +326,7 @@
                                             Converter={StaticResource BoolVisibleConverter}}">
                 <Run Text="retweeted: " />
                 <Hyperlink Command="{Binding Path=RetweetedUserDetailCommand}" Foreground="Gray">
-                    <Run Text="{Binding Path=Tweet, Converter={StaticResource TweetUserNameConverter}, ConverterParameter=RetweetedScreenName, Mode=OneWay, StringFormat=@{0}}" />
+                    <Run Text="{Binding Path=Tweet.ScreenName, IsAsync=True, Mode=OneWay, StringFormat=@{0}}" />
                 </Hyperlink>
             </TextBlock>
             <TextBlock Margin="4,2"
@@ -340,7 +335,7 @@
                                             Converter={StaticResource BoolVisibleConverter}}">
                 <Run Text="direct message to: " />
                 <Hyperlink Command="{Binding Path=OpenDMConversationCommand}" Foreground="Gray">
-                    <Run Text="{Binding Path=Tweet, Converter={StaticResource TweetUserNameConverter}, ConverterParameter=DirectMessageTarget, Mode=OneWay, StringFormat=@{0}}" />
+                    <Run Text="{Binding Path=Tweet.DirectMessageTargetName, IsAsync=True, Mode=OneWay, StringFormat=@{0}}" />
                 </Hyperlink>
             </TextBlock>
         </StackPanel>

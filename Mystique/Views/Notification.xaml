@@ -21,7 +21,6 @@
         <BitmapImage x:Key="Follow" UriSource="/Resources/accept.png" />
         <BitmapImage x:Key="DirectMessage" UriSource="/Resources/heart.png" />
         <BitmapImage x:Key="Unfavorite" UriSource="/Resources/grayed_star.png" />
-        <cp:UVMToUserNameConverter x:Key="UVMToUserNameConverter" />
     </Window.Resources>
     <i:Interaction.Triggers>
         <l:InteractionMessageTrigger MessageKey="WindowAction">
@@ -57,10 +56,9 @@
                         Orientation="Horizontal">
                 <TextBlock VerticalAlignment="Center"
                            Foreground="DimGray"
-                           Text="{Binding SourceUser,
+                           Text="{Binding Path=SourceUser.NotifyViewName,
                                           Mode=OneWay,
-                                          Converter={StaticResource UVMToUserNameConverter},
-                                          ConverterParameter=NotifyViewName}">
+                                          IsAsync=True}">
                     <i:Interaction.Triggers>
                         <i:EventTrigger EventName="MouseDown">
                             <i:InvokeCommandAction Command="{Binding ClickCommand}" />
@@ -111,10 +109,9 @@
                                             ConverterParameter=Follow}" />
                 <TextBlock VerticalAlignment="Center"
                            Foreground="DimGray"
-                           Text="{Binding TargetUser,
-                                          Mode=OneWay,
-                                          Converter={StaticResource UVMToUserNameConverter},
-                                          ConverterParameter=NotifyViewName}">
+                           Text="{Binding Path=TargetUser.NotifyViewName,
+                                          IsAsync=True,
+                                          Mode=OneWay}">
                     <i:Interaction.Triggers>
                         <i:EventTrigger EventName="MouseDown">
                             <i:InvokeCommandAction Command="{Binding ClickCommand}" />

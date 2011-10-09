@@ -1,6 +1,7 @@
 ﻿<UserControl x:Class="Mystique.Views.PartBlocks.MainBlock.TimelineChild.TimelineItem"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:cp="clr-namespace:Mystique.Views.Converters.Particular"
              xmlns:cpanel="clr-namespace:Mystique.Views.CustomPanels"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
@@ -8,7 +9,6 @@
              xmlns:mb="clr-namespace:Mystique.Views.Behaviors.Actions"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:my="clr-namespace:Mystique.Views.Common"
-             xmlns:cp="clr-namespace:Mystique.Views.Converters.Particular"
              d:DesignHeight="50"
              d:DesignWidth="500"
              InputMethod.IsInputMethodEnabled="False"
@@ -18,8 +18,6 @@
         <BitmapImage x:Key="Favorited" UriSource="/Resources/star.png" />
         <BitmapImage x:Key="Retweeted" UriSource="/Resources/rt.png" />
         <BitmapImage x:Key="Loading" UriSource="/Resources/refresh_large.png" />
-        <cp:TVMToUserNameConverter x:Key="TweetUserNameConverter" />
-        <cp:TVMToUserImageConverter x:Key="TweetUserImageConverter" />
         <cp:StringRemoveLineFeedConverter x:Key="SingleLineConverter" />
         <cp:CollectionToCountConverter x:Key="CollectionCountConverter" />
         <cp:CollectionExistToVisibleConverter x:Key="ExistVisibleConverter" />
@@ -61,7 +59,8 @@
         </Grid.ColumnDefinitions>
         <Grid.ToolTip>
             <ToolTip Width="{Binding Path=TooltipWidth,
-                                     Mode=OneWay, IsAsync=True}"
+                                     Mode=OneWay,
+                                     IsAsync=True}"
                      DataContext="{Binding Path=PlacementTarget.DataContext,
                                            RelativeSource={x:Static RelativeSource.Self}}"
                      HorizontalContentAlignment="Stretch"
@@ -72,9 +71,8 @@
                                   VerticalAlignment="Center"
                                   DefaultImage="{StaticResource Loading}"
                                   DockPanel.Dock="Left"
-                                  UriSource="{Binding Path=Tweet,
-                                                      Converter={StaticResource TweetUserImageConverter},
-                                                      ConverterParameter=Suggested}" />
+                                  UriSource="{Binding Path=Tweet.SuggestedProfileImage,
+                                                      IsAsync=True}" />
                     <DockPanel DockPanel.Dock="Top">
                         <DockPanel.Background>
                             <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
@@ -94,9 +92,9 @@
                                    DockPanel.Dock="Left"
                                    Foreground="Black">
                             <Bold>
-                                <Run Text="{Binding Path=Tweet, Converter={StaticResource TweetUserNameConverter}, Mode=OneWay}" />
+                                <Run Text="{Binding Path=Tweet.SuggestedScreenName, IsAsync=True, Mode=OneWay}" />
                             </Bold>
-                            <Run Foreground="Gray" Text="{Binding Path=Tweet, Converter={StaticResource TweetUserNameConverter}, ConverterParameter=Name, Mode=OneWay}" />
+                            <Run Foreground="Gray" Text="{Binding Path=Tweet.SuggestedName, IsAsync=True, Mode=OneWay}" />
                         </TextBlock>
                         <TextBlock Margin="4,2"
                                    HorizontalAlignment="Left"
@@ -114,7 +112,7 @@
                                    Visibility="{Binding Path=Tweet.IsPublishedByRetweet,
                                                         Converter={StaticResource BoolVisibleConverter}}">
                             <Run Text="retweeted: " />
-                            <Run Text="{Binding Path=Tweet, Converter={StaticResource TweetUserNameConverter}, ConverterParameter=RetweetedScreenName, Mode=OneWay, StringFormat=@{0}}" />
+                            <Run Text="{Binding Path=Tweet.ScreenName, IsAsync=True, Mode=OneWay, StringFormat=@{0}}" />
                         </TextBlock>
                         <TextBlock Margin="4,2"
                                    HorizontalAlignment="Left"
@@ -123,7 +121,7 @@
                                    Visibility="{Binding Path=Tweet.IsDirectMessage,
                                                         Converter={StaticResource BoolVisibleConverter}}">
                             <Run Text="direct message to: " />
-                            <Run Text="{Binding Path=Tweet, Converter={StaticResource TweetUserNameConverter}, ConverterParameter=DirectMessageTarget, Mode=OneWay, StringFormat=@{0}}" />
+                            <Run Text="{Binding Path=Tweet.DirectMessageTargetName, IsAsync=True, Mode=OneWay, StringFormat=@{0}}" />
                         </TextBlock>
                     </DockPanel>
                     <TextBlock Margin="2"
@@ -141,9 +139,8 @@
                           VerticalAlignment="Center"
                           DefaultImage="{StaticResource Loading}"
                           Stretch="UniformToFill"
-                          UriSource="{Binding Path=Tweet,
-                                              Converter={StaticResource TweetUserImageConverter},
-                                              ConverterParameter=Suggested}">
+                          UriSource="{Binding Path=Tweet.SuggestedProfileImage,
+                                              IsAsync=True}">
                 <my:LazyImage.Style>
                     <Style TargetType="my:LazyImage">
                         <Setter Property="my:LazyImage.Width" Value="24" />
@@ -217,10 +214,9 @@
         <TextBlock Grid.Column="1"
                    Margin="2"
                    Foreground="{Binding Path=ForeBrush}"
-                   Text="{Binding Path=Tweet,
-                                  Mode=OneTime,
-                                  ConverterParameter=ViewName,
-                                  Converter={StaticResource TweetUserNameConverter}}"
+                   Text="{Binding Path=Tweet.ViewName,
+                                  IsAsync=True,
+                                  Mode=OneTime}"
                    TextTrimming="CharacterEllipsis" />
         <TextBlock Grid.Column="2"
                    Margin="2"

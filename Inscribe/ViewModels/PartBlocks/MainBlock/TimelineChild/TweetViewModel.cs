@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Inscribe.Common;
@@ -11,6 +12,7 @@ using Inscribe.Storage;
 using Inscribe.Storage.Perpetuation;
 using Livet;
 using Livet.Commands;
+using Inscribe.Configuration.Settings;
 
 namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 {
@@ -46,8 +48,10 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         internal void SetBackend(TweetBackend backend)
         {
+            if (this._backend != null) return;
             System.Diagnostics.Debug.WriteLine("Set TVM...(ID:" + this.BindingId + ")");
-            this._backend = backend;
+            if (Interlocked.Exchange(ref _backend, backend) == null)
+                Task.Factory.StartNew(() => TweetStorage.AddCacheCount());
             this._lastReference = DateTime.Now;
             this._createdAt = backend.CreatedAt;
             this._isBackendGenerated = true;
@@ -56,8 +60,10 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
 
         internal void ReleaseBackend()
         {
+            if (this._backend == null) return;
             System.Diagnostics.Debug.WriteLine("Release TVM...(ID:" + this.BindingId + ")");
-            this._backend = null;
+            if (Interlocked.Exchange(ref _backend, null) != null)
+                TweetStorage.ReleaseCacheCount();
         }
 
         private DateTime _lastReference;
@@ -83,15 +89,17 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
                     // バックエンドがまだ生きているか、もしくはそもそも存在していない
                     return bec;
                 }
-                else 
+                else
                 {
                     // DBから取得
                     System.Diagnostics.Debug.WriteLine("Set TVM...(ID:" + this.BindingId + ")");
                     var be = PerpetuationStorage.GetTweetBackend(this.BindingId);
-                    this._backend = be;
+                    if (Interlocked.Exchange(ref _backend, be) == null)
+                    {
+                        Task.Factory.StartNew(() => TweetStorage.AddCacheCount());
+                    }
                     this._lastReference = DateTime.Now;
                     RaisePropertyChanged(() => Backend);
-                    Task.Factory.StartNew(() => TweetStorage.ReleaseCacheIfNeeded());
                     return be;
                 }
             }
@@ -108,6 +116,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
             this._createdAt = backend.CreatedAt;
             this._isBackendGenerated = true;
             this._lastReference = DateTime.Now;
+            Task.Factory.StartNew(() => TweetStorage.AddCacheCount());
         }
 
         public TweetViewModel(long id)
@@ -534,6 +543,111 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
                 return _createdAt;
             }
         }
+
+        #region Profile Images
+
+        public Uri DefaultProfileImage
+        {
+            get
+            {
+                var uv = this.UserViewModel;
+                return uv != null ? new Uri(uv.Backend.ProfileImage) : null;
+            }
+        }
+
+        public Uri RetweetedProfileImage
+        {
+            get { return DefaultProfileImage; }
+        }
+
+        public Uri DMReceipientProfileImage
+        {
+            get
+            {
+                var uv = UserStorage.Lookup(this.Backend.DirectMessageReceipientId);
+                return uv != null ? new Uri(uv.Backend.ProfileImage) : null;
+            }
+        }
+
+        public Uri SuggestedProfileImage
+        {
+            get
+            {
+                var uv = TwitterHelper.GetSuggestedUser(this);
+                return uv != null ? new Uri(uv.Backend.ProfileImage) : null;
+            }
+        }
+
+        #endregion
+
+        #region User Names
+
+        private static string GetUserName(TweetViewModel status)
+        {
+            if (status == null) return String.Empty;
+            return TwitterHelper.GetSuggestedUser(status).Backend.UserName ?? String.Empty;
+        }
+
+        private static string GetScreenName(TweetViewModel status)
+        {
+            if (status == null) return String.Empty;
+            return TwitterHelper.GetSuggestedUser(status).Backend.ScreenName ?? String.Empty;
+        }
+
+        public string SuggestedName
+        {
+            get { return GetUserName(this); }
+        }
+
+        public string SuggestedScreenName
+        {
+            get { return GetScreenName(this); }
+        }
+
+        public string ViewName
+        {
+            get
+            {
+                switch (Setting.Instance.TweetExperienceProperty.UserNameViewMode)
+                {
+                    case NameView.ID:
+                        return GetScreenName(this);
+                    case NameView.Name:
+                        return GetUserName(this);
+                    case NameView.Both:
+                    default:
+                        return GetScreenName(this) + " (" + GetUserName(this) + ")";
+                }
+            }
+        }
+
+        public string NotifyViewName
+        {
+            get
+            {
+                switch (Setting.Instance.TweetExperienceProperty.NotificationNameViewMode)
+                {
+                    case NameView.ID:
+                        return GetScreenName(this);
+                    case NameView.Name:
+                        return GetUserName(this);
+                    case NameView.Both:
+                    default:
+                        return GetScreenName(this) + " (" + GetUserName(this) + ")";
+                }
+            }
+        }
+
+        public string DirectMessageTargetName
+        {
+            get
+            {
+                var recp = UserStorage.Lookup(this.Backend.DirectMessageReceipientId);
+                return recp != null ? recp.Backend.ScreenName : String.Empty;
+            }
+        }
+
+        #endregion
 
         #endregion
 

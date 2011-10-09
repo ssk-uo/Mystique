@@ -11,7 +11,6 @@
              mc:Ignorable="d">
     <UserControl.Resources>
         <cp:StringRemoveLineFeedConverter x:Key="StringRemoveLineConverter" />
-        <cp:UVMToUserNameConverter x:Key="UVMToUserNameConverter" />
         <BitmapImage x:Key="Retweet" UriSource="/Resources/rt.png" />
         <BitmapImage x:Key="Favorite" UriSource="/Resources/star.png" />
         <BitmapImage x:Key="Unfavorite" UriSource="/Resources/grayed_star.png" />
@@ -726,10 +725,10 @@
                     </TransformGroup>
                 </Grid.LayoutTransform>
                 <TextBlock Margin="4"
-                           Text="{Binding SourceUser,
-                                          Converter={StaticResource UVMToUserNameConverter},
-                                          ConverterParameter=NotifyViewName}"
                            Foreground="Black"
+                           Text="{Binding Path=SourceUser.NotifyViewName,
+                                          IsAsync=True,
+                                          Mode=OneWay}"
                            TextDecorations="Underline"
                            TextWrapping="NoWrap">
                     <i:Interaction.Triggers>
@@ -856,8 +855,7 @@
                            Text="{Binding Target,
                                           Converter={StaticResource StringRemoveLineConverter}}"
                            TextTrimming="CharacterEllipsis"
-                           TextWrapping="NoWrap">
-                </TextBlock>
+                           TextWrapping="NoWrap" />
                 <TextBlock Grid.Column="1"
                            Margin="4,0"
                            VerticalAlignment="Center"
