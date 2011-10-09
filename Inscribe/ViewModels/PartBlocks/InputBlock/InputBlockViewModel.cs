@@ -27,6 +27,7 @@ using Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild;
 using Livet;
 using Livet.Commands;
 using Livet.Messaging;
+using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.ViewModels.PartBlocks.InputBlock
 {
@@ -407,7 +408,8 @@ namespace Inscribe.ViewModels.PartBlocks.InputBlock
         {
             Task.Factory.StartNew(() =>
             {
-                TweetStorage.GetAll(tvm => (DateTime.Now - tvm.CreatedAt).TotalHours > 12).ForEach(t => TweetStorage.Remove(t.BindingId));
+                TweetStorage.GetAll(tvm => (DateTime.Now - tvm.CreatedAt)
+                    .TotalHours > 12).ForEach(t => TweetStorage.Remove(t.BindingId));
             });
 
         }
@@ -461,8 +463,9 @@ namespace Inscribe.ViewModels.PartBlocks.InputBlock
         void _intelliSenseTextBoxViewModel_OnItemsOpening()
         {
             this._intelliSenseTextBoxViewModel.Items =
-                UserStorage.GetAll()
-                .Select(u => new IntelliSenseItemViewModel("@" + u.Backend.ScreenName, new Uri(u.Backend.ProfileImage)))
+                PerpetuationStorage.EnterLockWhenInitialized(() =>
+                    PerpetuationStorage.Users.Select(u => new { u.ScreenName, u.ProfileImage }).ToArray())
+                    .Select(v => new IntelliSenseItemViewModel("@" + v.ScreenName, new Uri(v.ProfileImage)))
                 .Concat(HashtagStorage.GetHashtags()
                     .Select(s => new IntelliSenseItemViewModel("#" + s, null)))
                 .OrderBy(s => s.ItemText).ToArray();

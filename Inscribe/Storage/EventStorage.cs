@@ -5,6 +5,7 @@ using Inscribe.Data;
 using Inscribe.ViewModels.PartBlocks.MainBlock;
 using Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild;
 using Livet;
+using Inscribe.Configuration;
 
 namespace Inscribe.Storage
 {
@@ -27,6 +28,9 @@ namespace Inscribe.Storage
 
         private static void Register(EventDescription description)
         {
+            if (Setting.Instance.TimelineFilteringProperty.MuteFilterCluster != null &&
+                Setting.Instance.TimelineFilteringProperty.MuteFilterCluster.Filter(description.TargetTweet.Backend))
+                return;
             events.AddLast(description);
             OnEventChanged(EventArgs.Empty);
             OnEventRegistered(new EventDescriptionEventArgs(description));

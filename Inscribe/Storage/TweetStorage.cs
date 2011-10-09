@@ -219,14 +219,21 @@ namespace Inscribe.Storage
                 }
             }
 
+            UserStorage.Register(status.User);
+            var registered = RegisterCore(status);
+
             // 返信先の登録
             if (status.InReplyToStatusId != 0)
             {
                 Get(status.InReplyToStatusId, true).RegisterInReplyToThis(status.Id);
             }
 
-            UserStorage.Register(status.User);
-            var registered = RegisterCore(status);
+            PerpetuationStorage.EnterLockWhenInitialized(() =>
+                PerpetuationStorage.Tweets.Where(b => b.InReplyToStatusId == status.Id)
+                .Select(b => b.Id)
+                .ToArray())
+                .ForEach(id => registered.RegisterInReplyToThis(id));
+
 
             if (TwitterHelper.IsMentionOfMe(status))
                 EventStorage.OnMention(registered);

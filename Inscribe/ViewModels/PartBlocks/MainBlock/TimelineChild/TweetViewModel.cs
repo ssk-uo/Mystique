@@ -55,6 +55,9 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
             this._lastReference = DateTime.Now;
             this._createdAt = backend.CreatedAt;
             this._isBackendGenerated = true;
+            backend.InReplyFroms = this.InReplyFroms.ToArray();
+            backend.RetweetedUserIds = this.RetweetedUsers.Select(u => u.BindingId).ToArray();
+            backend.FavoredUserIds = this.FavoredUsers.Select(u => u.BindingId).ToArray();
             RaisePropertyChanged(() => Backend);
         }
 
@@ -360,16 +363,6 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         /// </summary>
         private ConcurrentBag<long> inReplyFroms = null;
 
-        internal void RegisterInReplyFromsUnsafe(long[] ids)
-        {
-            lock (_irlock)
-            {
-                if (inReplyFroms == null)
-                    inReplyFroms = new ConcurrentBag<long>();
-                ids.ForEach(i => this.inReplyFroms.Add(i));
-            }
-        }
-
         /// <summary>
         /// このツイートに返信を行っていることを登録します。
         /// </summary>
@@ -382,6 +375,9 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
                     inReplyFroms = new ConcurrentBag<long>();
                 this.inReplyFroms.Add(tweetId);
                 TweetStorage.NotifyTweetStateChanged(this);
+                if (this.Backend != null) // emptyのことがある
+                    this.Backend.InReplyFroms = this.InReplyFroms.ToArray();
+                PerpetuationStorage.SaveChange();
             }
         }
 

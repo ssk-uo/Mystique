@@ -54,7 +54,7 @@
                                 <my:LazyImage Width="16"
                                               Height="16"
                                               DockPanel.Dock="Left"
-                                              UriSource="{Binding ItemImageUri}"
+                                              UriSource="{Binding ItemImageUri, IsAsync=True}"
                                               Visibility="{Binding IsImageEnabled,
                                                                    Converter={StaticResource BoolVisibleConverter}}" />
                                 <TextBlock Margin="2" Text="{Binding ItemText}" />

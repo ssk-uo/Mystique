@@ -103,11 +103,12 @@ namespace Inscribe.Storage.Perpetuation
             }
         }
 
-        public static void EnterLock(Action doInLock)
+        public static void EnterLockWhenInitialized(Action doInLock)
         {
             lock (dblock)
             {
-                doInLock();
+                if (database != null)
+                    doInLock();
             }
         }
 

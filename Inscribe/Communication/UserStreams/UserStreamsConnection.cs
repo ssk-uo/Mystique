@@ -259,7 +259,7 @@ namespace Inscribe.Communication.UserStreams
                             ConnectionManager.OnConnectionStateChanged(EventArgs.Empty);
                             System.Diagnostics.Debug.WriteLine("User Streams Connection with Track: " + track);
                             connection = streamingCore.ConnectNew(
-                                info, StreamingDescription.ForUserStreams(TwitterDefine.UserStreamsTimeout,
+                                info, StreamingDescription.ForUserStreams(TwitterDefine.UserStreamsTimeoutSec,
                                 track: track, repliesAll: info.AccoutProperty.UserStreamsRepliesAll));
                         }
                     }

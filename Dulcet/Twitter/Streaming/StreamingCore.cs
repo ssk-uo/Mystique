@@ -106,7 +106,7 @@ namespace Dulcet.Twitter.Streaming
                 BuildArguments(desc), out request);
             if (streaming == null)
                 throw new InvalidOperationException("接続に失敗しました。");
-            var con = new StreamingConnection(this, provider, request, streaming, desc.Timeout);
+            var con = new StreamingConnection(this, provider, request, streaming, desc.TimeoutSec);
             if (con == null)
                 throw new InvalidOperationException("受信開始に失敗しました。");
             lock (conLock)
@@ -343,7 +343,7 @@ namespace Dulcet.Twitter.Streaming
         /// With parameter
         /// </summary>
         public string With { get; private set; }
-        public int Timeout { get; private set; }
+        public int TimeoutSec { get; private set; }
 
 
         private StreamingDescription(
@@ -351,7 +351,7 @@ namespace Dulcet.Twitter.Streaming
             string track = null, string locations = null, bool? repliesAll = null, string with = null)
         {
             this.Type = type;
-            this.Timeout = timeout;
+            this.TimeoutSec = timeout;
             this.Delimited = delimited;
             this.Count = count;
             this.Follow = follow;

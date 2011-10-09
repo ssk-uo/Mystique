@@ -1,18 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using Inscribe.Common;
 using Inscribe.Configuration;
 using Inscribe.Data;
 using Inscribe.Filter;
 using Inscribe.Storage;
+using Inscribe.Storage.Perpetuation;
 using Inscribe.ViewModels.Behaviors.Messaging;
 using Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild;
 using Livet;
-using Dulcet.Twitter;
-using System.Threading;
-using Inscribe.Storage.Perpetuation;
 
 namespace Inscribe.ViewModels.PartBlocks.MainBlock
 {
@@ -44,6 +42,17 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
         }
 
         private bool _referenced = false;
+
+        private bool _isPreparingTweets = false;
+        public bool IsPreparingTweets
+        {
+            get { return _isPreparingTweets; }
+            set
+            {
+                _isPreparingTweets = value;
+                RaisePropertyChanged(() => IsPreparingTweets);
+            }
+        }
 
         private CachedConcurrentObservableCollection<TabDependentTweetViewModel> _tweetsSource;
         public CachedConcurrentObservableCollection<TabDependentTweetViewModel> TweetsSource
@@ -97,6 +106,7 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
 
         void f_RequireReaccept()
         {
+            System.Diagnostics.Debug.WriteLine("Reaccept from filter.");
             Task.Factory.StartNew(() => this.InvalidateCache());
         }
 
@@ -218,33 +228,38 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock
                 throw new InvalidOperationException("Can't invalidate cache on Dispatcher thread.");
             }
 
-            this._tweetsSource.Clear();
-            var collection = TweetStorage.GetAll(vm => CheckFilters(vm))
-                .Select(tvm => new TabDependentTweetViewModel(tvm, this.Parent));
-            /*
-            var collection = PerpetuationStorage.EnterLock(() =>
-                PerpetuationStorage.Tweets
-                .Where(be => CheckFilterSink(be))
-                .Select(be => be.Id)
-                .ToArray())
-                .Select(id => TweetStorage.Get(id))
-                .Where(vm => vm != null)
-                .Select(vm => new TabDependentTweetViewModel(vm, this.Parent)).ToArray();
-            */
-            Timer timer = null;
+            this.IsPreparingTweets = true;
+
             try
             {
-                timer = new Timer((o) => this.Commit(), null, 1500, 1500);
+                this._tweetsSource.Clear();
+                /*
+                var collection = TweetStorage.GetAll(vm => CheckFilters(vm))
+                    .Select(tvm => new TabDependentTweetViewModel(tvm, this.Parent));
+                */
+                System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+                sw.Start();
+                var db = PerpetuationStorage.EnterLockWhenInitialized(() =>
+                    PerpetuationStorage.Tweets
+                    .ToArray()).ToArray();
+                System.Diagnostics.Debug.WriteLine("# db:" + sw.ElapsedMilliseconds);
+                var collection = db.AsParallel().Where(be => CheckFilterSink(be))
+                    .Select(be => TweetStorage.Get(be.Id))
+                    .Where(vm => vm != null)
+                    .Select(vm => new TabDependentTweetViewModel(vm, this.Parent)).ToArray();
+                System.Diagnostics.Debug.WriteLine("# collection:" + sw.ElapsedMilliseconds);
                 foreach (var tvm in collection)
                 {
                     this._tweetsSource.AddVolatile(tvm);
                 }
+                System.Diagnostics.Debug.WriteLine("# add-volatile:" + sw.ElapsedMilliseconds);
                 this.Commit();
+                System.Diagnostics.Debug.WriteLine("# commit:" + sw.ElapsedMilliseconds);
+                sw.Stop();
             }
             finally
             {
-                if (timer != null)
-                    timer.Dispose();
+                this.IsPreparingTweets = false;
             }
         }
 

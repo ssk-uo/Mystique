@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Dulcet.Twitter;
 using Dulcet.Twitter.Rest;
 using Inscribe.Common;
 using Inscribe.Filter.Core;
 using Inscribe.Storage;
 using Inscribe.Storage.Perpetuation;
+using Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild;
+using System.Threading;
 
 namespace Inscribe.Filter.Filters.Particular
 {
@@ -40,8 +41,10 @@ namespace Inscribe.Filter.Filters.Particular
 
         private void RecursiveCheckId(long id)
         {
+            System.Diagnostics.Debug.WriteLine("***** Recursive IN:" + id);
             if (id == 0)
             {
+                System.Diagnostics.Debug.WriteLine("***** OK:" + id);
                 RaiseRequireReaccept();
                 return;
             }
@@ -52,11 +55,12 @@ namespace Inscribe.Filter.Filters.Particular
                 var tweet = TweetStorage.Get(id);
                 if (tweet == null)
                 {
+                    System.Diagnostics.Debug.WriteLine("***** OK:" + id);
                     RaiseRequireReaccept();
-                    return;
                 }
-                if (tweet.Backend.InReplyToStatusId != 0)
+                else if (tweet.Backend.InReplyToStatusId != 0)
                 {
+                    System.Diagnostics.Debug.WriteLine("***** New trace point:" + tweet.Backend.InReplyToStatusId);
                     this.tracePoint = tweet.Backend.InReplyToStatusId;
                     RaisePartialRequireReaccept(tweet.BindingId);
                     RecursiveCheckId(tweet.Backend.InReplyToStatusId);
@@ -64,6 +68,7 @@ namespace Inscribe.Filter.Filters.Particular
                 }
                 else
                 {
+                    System.Diagnostics.Debug.WriteLine("***** OK:" + id);
                     RaiseRequireReaccept();
                 }
             }
@@ -81,11 +86,12 @@ namespace Inscribe.Filter.Filters.Particular
                 {
                     try
                     {
+                        System.Diagnostics.Debug.WriteLine("***** Receiving:" + id);
                         var status = ApiHelper.ExecApi(() => AccountStorage.GetRandom().GetStatus(id));
+                        System.Diagnostics.Debug.WriteLine("***** Received:" + id);
                         if (status != null)
                         {
-                            var vm = TweetStorage.Register(status);
-                            Task.Factory.StartNew(() => RecursiveCheckId(status.Id));
+                            TweetStorage.Register(status).ContinueWith(_ => RecursiveCheckId(id));
                             Task.Factory.StartNew(() =>
                                 PerpetuationStorage.EnterLockWhenInitialized(() =>
                                     PerpetuationStorage.Tweets.Where(i => i.InReplyToStatusId == id)
@@ -95,6 +101,7 @@ namespace Inscribe.Filter.Filters.Particular
                         }
                         else
                         {
+                            System.Diagnostics.Debug.WriteLine("***** OK:" + id);
                             RaiseRequireReaccept();
                         }
                     }
@@ -108,22 +115,51 @@ namespace Inscribe.Filter.Filters.Particular
             }
         }
 
+        private Tuple<long, long>[] idTable = null;
+
+        private DateTime cacheGenerated = DateTime.MinValue;
+
+        /// <summary>
+        /// IDキャッシュを構築
+        /// </summary>
+        private void InvalidateIdCache()
+        {
+            System.Diagnostics.Debug.WriteLine("regenerate cache.");
+            var idt = PerpetuationStorage.EnterLockWhenInitialized(() =>
+                PerpetuationStorage.Tweets
+                .Where(i => i.InReplyToStatusId != 0)
+                .Select(i => new { i.Id, i.InReplyToStatusId }).ToArray())
+                .Select(t => new Tuple<long, long>(t.Id, t.InReplyToStatusId)).ToArray();
+            Interlocked.Exchange(ref idTable, idt);
+            cacheGenerated = DateTime.Now;
+        }
+
+        private object idclock = new object();
+
         protected override bool FilterStatus(TweetBackend status)
         {
-            return TraceId(status.Id);
+            lock (idclock)
+            {
+                if ((DateTime.Now - cacheGenerated).TotalSeconds > 10 || idTable == null)
+                    InvalidateIdCache();
+            }
+            if (status.Id == tracePoint || status.InReplyToStatusId == tracePoint)
+                return true;
+            else if (status.InReplyToStatusId == 0)
+                return false;
+            else
+                return TraceId(status.Id);
         }
 
         private bool TraceId(long id)
         {
-            var vm = TweetStorage.Get(id);
-            if (vm == null || !vm.IsStatusInfoContains)
-                return false;
-            if (vm.BindingId == tracePoint)
+            if (id == tracePoint)
                 return true;
-            if (vm.Backend.InReplyToStatusId == 0)
+            var be = idTable.FirstOrDefault(i => i.Item1 == id);
+            if (be == null || be.Item2 == 0)
                 return false;
             else
-                return TraceId(vm.Backend.InReplyToStatusId);
+                return TraceId(be.Item2);
         }
 
         public override string Identifier
