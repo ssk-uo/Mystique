@@ -63,9 +63,16 @@ namespace Inscribe.Storage
             if (uvm != null)
             {
                 var be = uvm.Backend;
-                if (be != null)
+                if (be != null && (user.CreatedTimestamp - be.CreatedTimestamp).TotalMinutes > TwitterDefine.UserCacheAliveMin)
                 {
                     be.Overwrite(user);
+                    PerpetuationStorage.SaveChange();
+                }
+                else if (be == null)
+                {
+                    var nbe = new UserBackend(user);
+                    uvm.SetBackend(nbe);
+                    PerpetuationStorage.AddUserBackend(nbe);
                     PerpetuationStorage.SaveChange();
                 }
                 return uvm;
@@ -80,6 +87,15 @@ namespace Inscribe.Storage
                 }
             }
             return newvm;
+        }
+
+        public static void WritebackFromDb(UserBackend be)
+        {
+            using (lockWrap.GetWriterLock())
+            {
+                if (!dictionary.ContainsKey(be.Id))
+                    dictionary.Add(be.Id, new UserViewModel(be));
+            }
         }
 
         /// <summary>

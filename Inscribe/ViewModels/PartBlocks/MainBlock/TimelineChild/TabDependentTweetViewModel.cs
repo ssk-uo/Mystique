@@ -176,46 +176,48 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
                     return Setting.Instance.ColoringProperty.InReplyToMeSub.GetColor();
 
                 var uvm = UserStorage.Lookup(this.Tweet.Backend.UserId);
+                if (uvm != null)
+                {
 
-                if (Setting.Instance.ColoringProperty.Friend.IsActivated &&
-                    TwitterHelper.IsFollowingCurrent(uvm, ptv) &&
-                    TwitterHelper.IsFollowerCurrent(uvm, ptv))
-                    return Setting.Instance.ColoringProperty.Friend.GetColor();
+                    if (Setting.Instance.ColoringProperty.Friend.IsActivated &&
+                        TwitterHelper.IsFollowingCurrent(uvm, ptv) &&
+                        TwitterHelper.IsFollowerCurrent(uvm, ptv))
+                        return Setting.Instance.ColoringProperty.Friend.GetColor();
 
-                if (Setting.Instance.ColoringProperty.Following.IsActivated &&
-                    TwitterHelper.IsFollowingCurrent(uvm, ptv))
-                    return Setting.Instance.ColoringProperty.Following.GetColor();
+                    if (Setting.Instance.ColoringProperty.Following.IsActivated &&
+                        TwitterHelper.IsFollowingCurrent(uvm, ptv))
+                        return Setting.Instance.ColoringProperty.Following.GetColor();
 
-                if (Setting.Instance.ColoringProperty.Follower.IsActivated &&
-                    TwitterHelper.IsFollowerCurrent(uvm, ptv))
-                    return Setting.Instance.ColoringProperty.Follower.GetColor();
+                    if (Setting.Instance.ColoringProperty.Follower.IsActivated &&
+                        TwitterHelper.IsFollowerCurrent(uvm, ptv))
+                        return Setting.Instance.ColoringProperty.Follower.GetColor();
 
-                if (Setting.Instance.ColoringProperty.Friend.IsActivated &&
-                    TwitterHelper.IsFollowingCurrent(uvm, ptv) &&
-                    TwitterHelper.IsFollowerCurrent(uvm, ptv))
-                    return Setting.Instance.ColoringProperty.Friend.GetColor();
+                    if (Setting.Instance.ColoringProperty.Friend.IsActivated &&
+                        TwitterHelper.IsFollowingCurrent(uvm, ptv) &&
+                        TwitterHelper.IsFollowerCurrent(uvm, ptv))
+                        return Setting.Instance.ColoringProperty.Friend.GetColor();
 
-                if (Setting.Instance.ColoringProperty.Following.IsActivated &&
-                    TwitterHelper.IsFollowingCurrent(uvm, ptv))
-                    return Setting.Instance.ColoringProperty.Following.GetColor();
+                    if (Setting.Instance.ColoringProperty.Following.IsActivated &&
+                        TwitterHelper.IsFollowingCurrent(uvm, ptv))
+                        return Setting.Instance.ColoringProperty.Following.GetColor();
 
-                if (Setting.Instance.ColoringProperty.Follower.IsActivated &&
-                    TwitterHelper.IsFollowerCurrent(uvm, ptv))
-                    return Setting.Instance.ColoringProperty.Follower.GetColor();
+                    if (Setting.Instance.ColoringProperty.Follower.IsActivated &&
+                        TwitterHelper.IsFollowerCurrent(uvm, ptv))
+                        return Setting.Instance.ColoringProperty.Follower.GetColor();
 
-                if (Setting.Instance.ColoringProperty.FriendAny.IsActivated &&
-                    TwitterHelper.IsFollowingAny(uvm) &&
-                    TwitterHelper.IsFollowerAny(uvm))
-                    return Setting.Instance.ColoringProperty.FriendAny.GetColor();
+                    if (Setting.Instance.ColoringProperty.FriendAny.IsActivated &&
+                        TwitterHelper.IsFollowingAny(uvm) &&
+                        TwitterHelper.IsFollowerAny(uvm))
+                        return Setting.Instance.ColoringProperty.FriendAny.GetColor();
 
-                if (Setting.Instance.ColoringProperty.FollowingAny.IsActivated &&
-                    TwitterHelper.IsFollowingAny(uvm))
-                    return Setting.Instance.ColoringProperty.FollowingAny.GetColor();
+                    if (Setting.Instance.ColoringProperty.FollowingAny.IsActivated &&
+                        TwitterHelper.IsFollowingAny(uvm))
+                        return Setting.Instance.ColoringProperty.FollowingAny.GetColor();
 
-                if (Setting.Instance.ColoringProperty.FollowerAny.IsActivated &&
-                    TwitterHelper.IsFollowerAny(uvm))
-                    return Setting.Instance.ColoringProperty.FollowerAny.GetColor();
-
+                    if (Setting.Instance.ColoringProperty.FollowerAny.IsActivated &&
+                        TwitterHelper.IsFollowerAny(uvm))
+                        return Setting.Instance.ColoringProperty.FollowerAny.GetColor();
+                }
                 return Setting.Instance.ColoringProperty.BaseHighlightColor.GetColor();
             }
             else

@@ -9,7 +9,7 @@ namespace Inscribe.Configuration.Settings
 
         public int ImageLifetime = 1000 * 60 * 10;
 
-        public int TweetCacheMaxCount = 1000;
+        public int TweetCacheMaxCount = 2000;
 
         public double TweetCacheSurviveDensity = 0.5;
 
@@ -20,5 +20,9 @@ namespace Inscribe.Configuration.Settings
         public int ImageCacheMaxCount = 500;
 
         public double ImageCacheSurviveDensity = 0.5;
+
+        public bool TweetPerpetuation = true;
+
+        public int TweetPerpetuationMaxCount = 20000;
     }
 }

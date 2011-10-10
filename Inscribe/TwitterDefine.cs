@@ -56,5 +56,11 @@ namespace Inscribe
         public static readonly int UrlMaxLength = 19;
 
         #endregion
+
+        #region Cache control
+
+        public static double UserCacheAliveMin = 5;
+
+        #endregion
     }
 }

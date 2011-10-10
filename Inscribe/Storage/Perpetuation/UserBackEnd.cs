@@ -76,27 +76,5 @@ namespace Inscribe.Storage.Perpetuation
         public long Tweets { get; set; }
 
         public DateTime CreatedTimestamp { get; set; }
-
-        public TwitterUser Rebirth()
-        {
-            return new TwitterUser(this.CreatedTimestamp)
-            {
-                NumericId = this.Id,
-                ScreenName = this.ScreenName,
-                UserName = this.UserName,
-                Bio = this.Bio,
-                Location = this.Location,
-                ProfileImage = new Uri(this.ProfileImage),
-                Web = this.Web,
-                IsProtected = this.IsProtected,
-                IsVerified = this.IsVerified,
-                CreatedAt = this.CreatedAt,
-                Followers = this.Followers,
-                Followings = this.Followings,
-                Favorites = this.Favorites,
-                Listed = this.Listed,
-                Tweets = this.Tweets
-            };
-        }
     }
 }

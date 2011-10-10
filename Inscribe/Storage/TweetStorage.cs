@@ -151,42 +151,59 @@ namespace Inscribe.Storage
         /// 受信したツイートを登録します。<para />
         /// 諸々の処理を自動で行います。
         /// </summary>
-        public static Task<TweetViewModel> Register(TwitterStatusBase statusBase)
-        {
-            TweetViewModel generated = null;
-            Task<TweetViewModel> result = new Task<TweetViewModel>(() => generated);
-            operationDispatcher.Enqueue(() =>
-            {
-                generated = RegisterSink(statusBase);
-                result.Start();
-            });
-            return result;
-        }
-
-
-        /// <summary>
-        /// 受信したツイートを登録します。<para />
-        /// 同期的に処理されます。
-        /// </summary>
-        private static TweetViewModel RegisterSink(TwitterStatusBase statusBase)
+        public static void Register(TwitterStatusBase statusBase)
         {
             TweetViewModel robj;
             using (dicLockWrap.GetReaderLock())
             {
-                if (dictionary.TryGetValue(statusBase.Id, out robj))
-                    return robj;
+                if (dictionary.ContainsKey(statusBase.Id))
+                    return;
             }
             var status = statusBase as TwitterStatus;
             if (status != null)
             {
-                return RegisterStatus(status);
+                RegisterStatus(status);
             }
             else
             {
                 var dmsg = statusBase as TwitterDirectMessage;
                 if (dmsg != null)
                 {
-                    return RegisterDirectMessage(dmsg);
+                    RegisterDirectMessage(dmsg);
+                }
+                else
+                {
+                    throw new InvalidOperationException("不明なステータスを受信しました: " + statusBase);
+                }
+            }
+        }
+
+        public static void Register(TwitterStatusBase statusBase, Action<TweetViewModel> receiver)
+        {
+            TweetViewModel robj;
+            using (dicLockWrap.GetReaderLock())
+            {
+                if (dictionary.TryGetValue(statusBase.Id, out robj))
+                {
+                    receiver(robj);
+                    return;
+                }
+            }
+            var status = statusBase as TwitterStatus;
+            if (status != null)
+            {
+                RegisterStatus(status)
+                        .ContinueWith(t => Task.Factory.StartNew(() => receiver(t.Result)));
+                return;
+            }
+            else
+            {
+                var dmsg = statusBase as TwitterDirectMessage;
+                if (dmsg != null)
+                {
+                    RegisterDirectMessage(dmsg)
+                        .ContinueWith(t => Task.Factory.StartNew(() => receiver(t.Result)));
+                    return;
                 }
                 else
                 {
@@ -198,84 +215,99 @@ namespace Inscribe.Storage
         /// <summary>
         /// ステータスの追加に際しての処理
         /// </summary>
-        private static TweetViewModel RegisterStatus(TwitterStatus status)
+        private static Task<TweetViewModel> RegisterStatus(TwitterStatus status)
         {
+            var regAction = new Func<Task<TweetViewModel>>(() =>
+            {
+                UserStorage.Register(status.User);
+                return RegisterCore(status)
+                    .ContinueWith(t =>
+                    {
+                        if (TwitterHelper.IsMentionOfMe(status))
+                            EventStorage.OnMention(t.Result);
+                        return t.Result;
+                    });
+            });
             if (status.RetweetedOriginal != null)
             {
                 // リツイートのオリジナルステータスを登録
-                var vm = RegisterSink(status.RetweetedOriginal);
-
-                // リツイートユーザーに登録
-                var user = UserStorage.Get(status.User);
-                var tuser = UserStorage.Get(status.RetweetedOriginal.User);
-                if (vm.RegisterRetweeted(user))
-                {
-                    if (!vm.IsStatusInfoContains)
-                        vm.SetBackend(new Perpetuation.TweetBackend(status.RetweetedOriginal));
-                    // 自分が関係していれば
-                    if (AccountStorage.Contains(status.RetweetedOriginal.User.ScreenName)
-                        || AccountStorage.Contains(user.Backend.ScreenName))
-                        EventStorage.OnRetweeted(vm, user);
-                }
+                return RegisterCore(status.RetweetedOriginal)
+                    .ContinueWith(t =>
+                        {
+                            var vm = t.Result;
+                            // リツイートユーザーに登録
+                            var user = UserStorage.Get(status.User);
+                            var tuser = UserStorage.Get(status.RetweetedOriginal.User);
+                            if (vm.RegisterRetweeted(user))
+                            {
+                                if (!vm.IsStatusInfoContains)
+                                    vm.SetBackend(new Perpetuation.TweetBackend(status.RetweetedOriginal));
+                                // 自分が関係していれば
+                                if (AccountStorage.Contains(status.RetweetedOriginal.User.ScreenName)
+                                    || AccountStorage.Contains(user.Backend.ScreenName))
+                                    EventStorage.OnRetweeted(vm, user);
+                            }
+                            return regAction().Result;
+                        });
             }
-
-            UserStorage.Register(status.User);
-            var registered = RegisterCore(status);
-
-            // 返信先の登録
-            if (status.InReplyToStatusId != 0)
+            else
             {
-                Get(status.InReplyToStatusId, true).RegisterInReplyToThis(status.Id);
+                return regAction();
             }
-
-            PerpetuationStorage.EnterLockWhenInitialized(() =>
-                PerpetuationStorage.Tweets.Where(b => b.InReplyToStatusId == status.Id)
-                .Select(b => b.Id)
-                .ToArray())
-                .ForEach(id => registered.RegisterInReplyToThis(id));
-
-
-            if (TwitterHelper.IsMentionOfMe(status))
-                EventStorage.OnMention(registered);
-            return registered;
         }
 
         /// <summary>
         /// ダイレクトメッセージの追加に際しての処理
         /// </summary>
-        private static TweetViewModel RegisterDirectMessage(TwitterDirectMessage dmsg)
+        private static Task<TweetViewModel> RegisterDirectMessage(TwitterDirectMessage dmsg)
         {
             UserStorage.Register(dmsg.Sender);
             UserStorage.Register(dmsg.Recipient);
-            var vm = RegisterCore(dmsg);
-            EventStorage.OnDirectMessage(vm);
-            return vm;
+            return RegisterCore(dmsg).ContinueWith(t =>
+                {
+                    EventStorage.OnDirectMessage(t.Result);
+                    return t.Result;
+                });
         }
 
         /// <summary>
         /// ステータスベースの登録処理
         /// </summary>
-        private static TweetViewModel RegisterCore(TwitterStatusBase statusBase)
+        private static Task<TweetViewModel> RegisterCore(TwitterStatusBase statusBase)
         {
             PreProcess(statusBase);
+            TweetViewModel generated = null;
+            Task<TweetViewModel> result = new Task<TweetViewModel>(() => generated);
+            operationDispatcher.Enqueue(() =>
+            {
+                generated = RegisterBackend(new TweetBackend(statusBase));
+                // generated = RegisterSink(statusBase);
+                result.Start();
+            });
+            return result;
+            // .else. return RegisterBackend(new Perpetuation.TweetBackend(statusBase));
+        }
+
+        internal static TweetViewModel RegisterBackend(TweetBackend backend)
+        {
             TweetViewModel viewModel;
             using (edLockWrap.GetUpgradableReaderLock())
             {
-                if (empties.TryGetValue(statusBase.Id, out viewModel))
+                if (empties.TryGetValue(backend.Id, out viewModel))
                 {
                     // 既にViewModelが生成済み
                     if (!viewModel.IsStatusInfoContains)
-                        viewModel.SetBackend(new Perpetuation.TweetBackend(statusBase));
+                        viewModel.SetBackend(backend);
                     using (edLockWrap.GetWriterLock())
                     {
-                        empties.Remove(statusBase.Id);
+                        empties.Remove(backend.Id);
                     }
                 }
                 else
                 {
                     // 全く初めて触れるステータス
                     _count++;
-                    viewModel = new TweetViewModel(new Perpetuation.TweetBackend(statusBase));
+                    viewModel = new TweetViewModel(backend);
                 }
             }
             if (ValidateTweet(viewModel))
@@ -284,9 +316,9 @@ namespace Inscribe.Storage
                 using (dicLockWrap.GetUpgradableReaderLock())
                 using (edLockWrap.GetReaderLock())
                 {
-                    if (!deleteReserveds.Contains(statusBase.Id))
+                    if (!deleteReserveds.Contains(backend.Id))
                     {
-                        if (dictionary.ContainsKey(statusBase.Id))
+                        if (dictionary.ContainsKey(backend.Id))
                         {
                             return viewModel; // すでにKrile内に存在する
                         }
@@ -296,20 +328,40 @@ namespace Inscribe.Storage
                             {
                                 using (dicLockWrap.GetWriterLock())
                                 {
-                                    dictionary.Add(statusBase.Id, viewModel);
+                                    dictionary.Add(backend.Id, viewModel);
                                 }
                             }
                         }
                         Task.Factory.StartNew(() => RaiseStatusAdded(viewModel));
                     }
                 }
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine("*** trash: " + statusBase.ToString());
+                // 返信先の登録
+                if (backend.InReplyToStatusId != 0)
+                {
+                    Get(backend.InReplyToStatusId, true).RegisterInReplyToThis(backend.Id);
+                }
+
+                PerpetuationStorage.EnterLockWhenInitialized(() =>
+                    PerpetuationStorage.Tweets.Where(b => b.InReplyToStatusId == backend.Id)
+                    .Select(b => b.Id)
+                    .ToArray())
+                    .ForEach(id => viewModel.RegisterInReplyToThis(id));
             }
             return viewModel;
         }
+
+        internal static void WritebackFromDb(TweetBackend backend)
+        {
+            using (dicLockWrap.GetWriterLock())
+            {
+                if (!dictionary.ContainsKey(backend.Id))
+                {
+                    dictionary.Add(backend.Id, new TweetViewModel(backend));
+                    _count++;
+                }
+            }
+        }
+
 
         /// <summary>
         /// 登録可能なツイートか判定

@@ -28,7 +28,8 @@ namespace Inscribe.Storage
 
         private static void Register(EventDescription description)
         {
-            if (Setting.Instance.TimelineFilteringProperty.MuteFilterCluster != null &&
+            if (description.TargetTweet != null &&
+                Setting.Instance.TimelineFilteringProperty.MuteFilterCluster != null &&
                 Setting.Instance.TimelineFilteringProperty.MuteFilterCluster.Filter(description.TargetTweet.Backend))
                 return;
             events.AddLast(description);

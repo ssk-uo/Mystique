@@ -99,21 +99,21 @@ namespace Inscribe.Communication.UserStreams
                     TweetStorage.Register(elem.Status);
                     break;
                 case ElementKind.Favorite:
-                    TweetStorage.Register(elem.Status).ContinueWith(t =>
+                    TweetStorage.Register(elem.Status, t =>
                         {
-                            if (t.Result == null) return;
+                            if (t == null) return;
                             var uavm = UserStorage.Get(elem.SourceUser);
-                            if (t.Result.RegisterFavored(uavm))
-                                EventStorage.OnFavored(t.Result, uavm);
+                            if (t.RegisterFavored(uavm))
+                                EventStorage.OnFavored(t, uavm);
                         });
                     break;
                 case ElementKind.Unfavorite:
-                    TweetStorage.Register(elem.Status).ContinueWith(t =>
+                    TweetStorage.Register(elem.Status,t =>
                         {
-                            if (t.Result == null) return;
+                            if (t == null) return;
                             var urvm = UserStorage.Get(elem.SourceUser);
-                            if (t.Result.RemoveFavored(urvm))
-                                EventStorage.OnUnfavored(t.Result, urvm);
+                            if (t.RemoveFavored(urvm))
+                                EventStorage.OnUnfavored(t, urvm);
                         });
                     break;
                 case ElementKind.Delete:

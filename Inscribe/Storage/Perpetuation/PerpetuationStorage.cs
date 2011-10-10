@@ -1,9 +1,11 @@
-﻿using System.Data.Entity;
+﻿using System;
+using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.IO;
 using System.Linq;
 using Inscribe.Common;
-using System;
+using Inscribe.Configuration;
+using System.Threading;
 
 namespace Inscribe.Storage.Perpetuation
 {
@@ -23,7 +25,10 @@ namespace Inscribe.Storage.Perpetuation
             {
                 Database.DefaultConnectionFactory = new SqlCeConnectionFactory("System.Data.SqlServerCe.4.0");
                 // Initialize Database
-                Database.SetInitializer(new DropCreateDatabaseAlways<PerpetuationDatabase>());
+                if (Setting.Instance.KernelProperty.TweetPerpetuation)
+                    Database.SetInitializer(new DropCreateDatabaseIfModelChanges<PerpetuationDatabase>()); // Modelが変化したら破棄
+                else
+                    Database.SetInitializer(new DropCreateDatabaseAlways<PerpetuationDatabase>()); // 常に破棄
                 var path = Path.Combine(Path.GetDirectoryName(Define.ExeFilePath), Define.DatabaseFileName);
                 database = new PerpetuationDatabase(path);
             }
@@ -85,12 +90,21 @@ namespace Inscribe.Storage.Perpetuation
             }
         }
 
+        static int saving = 0;
         internal static void SaveChange()
         {
-            lock (dblock)
+            if (Interlocked.Exchange(ref saving, 1) == 1) return;
+            try
             {
-                if (database != null)
-                    database.SaveChanges();
+                lock (dblock)
+                {
+                    if (database != null)
+                        database.SaveChanges();
+                }
+            }
+            finally
+            {
+                saving = 0;
             }
         }
 
@@ -143,6 +157,39 @@ namespace Inscribe.Storage.Perpetuation
                 else
                     return database.UserSet;
             }
+        }
+
+        /// <summary>
+        /// TweetStorageが本格的に稼働する前にコールしてください。
+        /// </summary>
+        internal static void Writeback()
+        {
+            TweetBackend[] tbes;
+            UserBackend[] ubes;
+            // データベースのトリム
+            lock (dblock)
+            {
+                if (database == null)
+                    throw new InvalidOperationException();
+                tbes = database.TweetSet
+                    .OrderByDescending(be => be.CreatedAt)
+                    .Take(Setting.Instance.KernelProperty.TweetPerpetuationMaxCount)
+                    .ToArray();
+                database.TweetSet
+                    .OrderByDescending(be => be.CreatedAt)
+                    .Skip(Setting.Instance.KernelProperty.TweetPerpetuationMaxCount)
+                    .ToArray()
+                    .ForEach(be => database.TweetSet.Remove(be));
+                ubes = database.UserSet.Join(
+                    database.TweetSet.Select(tbe => tbe.UserId).Distinct(),
+                    ube => ube.Id,
+                    uid => uid,
+                    (ub, id) => ub).ToArray();
+            }
+            tbes.ForEach(be =>
+                TweetStorage.WritebackFromDb(be));
+            ubes.ForEach(be =>
+                UserStorage.WritebackFromDb(be));
         }
     }
 }

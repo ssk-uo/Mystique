@@ -6,8 +6,8 @@ using Inscribe.Communication.UserStreams;
 using Inscribe.Configuration;
 using Inscribe.Plugin;
 using Inscribe.Storage;
-using Inscribe.Subsystems;
 using Inscribe.Storage.Perpetuation;
+using Inscribe.Subsystems;
 
 namespace Inscribe.Core
 {
@@ -34,6 +34,10 @@ namespace Inscribe.Core
 
             // データベース初期化
             PerpetuationStorage.ConnectDB();
+
+            // データベースとメモリストレージの同期
+            if (Setting.Instance.KernelProperty.TweetPerpetuation)
+                PerpetuationStorage.Writeback();
 
             // サブシステムの初期化
             NotificationCore.Initialize();

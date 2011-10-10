@@ -91,7 +91,7 @@ namespace Inscribe.Filter.Filters.Particular
                         System.Diagnostics.Debug.WriteLine("***** Received:" + id);
                         if (status != null)
                         {
-                            TweetStorage.Register(status).ContinueWith(_ => RecursiveCheckId(id));
+                            TweetStorage.Register(status, _ => RecursiveCheckId(id));
                             Task.Factory.StartNew(() =>
                                 PerpetuationStorage.EnterLockWhenInitialized(() =>
                                     PerpetuationStorage.Tweets.Where(i => i.InReplyToStatusId == id)
