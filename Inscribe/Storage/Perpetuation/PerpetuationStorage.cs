@@ -41,7 +41,7 @@ namespace Inscribe.Storage.Perpetuation
                 if (database != null)
                 {
                     database.TweetSet.Add(tbe);
-                    database.SaveChanges();
+                    // database.SaveChanges();
                     return true;
                 }
                 else
@@ -69,7 +69,7 @@ namespace Inscribe.Storage.Perpetuation
                 if (database != null)
                 {
                     database.UserSet.Add(ube);
-                    database.SaveChanges();
+                    // database.SaveChanges();
                     return true;
                 }
                 else
@@ -93,6 +93,7 @@ namespace Inscribe.Storage.Perpetuation
         static int saving = 0;
         internal static void SaveChange()
         {
+            /*
             if (Interlocked.Exchange(ref saving, 1) == 1) return;
             try
             {
@@ -106,12 +107,14 @@ namespace Inscribe.Storage.Perpetuation
             {
                 saving = 0;
             }
+            */
         }
 
         internal static void DisconnectDB()
         {
             lock (dblock)
             {
+                database.SaveChanges();
                 database.Dispose();
                 database = null;
             }
