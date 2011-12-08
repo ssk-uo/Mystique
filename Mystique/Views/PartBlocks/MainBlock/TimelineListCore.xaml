@@ -34,9 +34,6 @@
         <BitmapImage x:Key="Comment"
                      PresentationOptions:Freeze="True"
                      UriSource="/Resources/comment_edit.png" />
-        <BitmapImage x:Key="Favorited"
-                     PresentationOptions:Freeze="True"
-                     UriSource="/Resources/star.png" />
         <BitmapImage x:Key="Loading"
                      PresentationOptions:Freeze="True"
                      UriSource="/Resources/refresh_large.png" />
@@ -421,7 +418,7 @@
                                    VerticalAlignment="Center"
                                    RenderOptions.BitmapScalingMode="NearestNeighbor"
                                    SnapsToDevicePixels="True"
-                                   Source="{StaticResource Favorited}" />
+                                   Source="{StaticResource Favorite}" />
                             <Button.ToolTip>Favoriteに追加</Button.ToolTip>
                         </Button>
                         <Button Grid.Column="2"
@@ -472,7 +469,7 @@
                                    VerticalAlignment="Center"
                                    RenderOptions.BitmapScalingMode="NearestNeighbor"
                                    SnapsToDevicePixels="True"
-                                   Source="{StaticResource Favorited}" />
+                                   Source="{StaticResource Favorite}" />
                             <TextBlock Margin="2,2,4,2"
                                        VerticalAlignment="Center"
                                        Foreground="Goldenrod"
@@ -508,7 +505,7 @@
                            VerticalAlignment="Center"
                            RenderOptions.BitmapScalingMode="NearestNeighbor"
                            SnapsToDevicePixels="True"
-                           Source="{StaticResource Favorited}"
+                           Source="{StaticResource Favorite}"
                            Visibility="{Binding Path=Tweet.IsFavored,
                                                 Converter={StaticResource BoolVisibleConverter}}" />
                     <Image Width="16"
@@ -882,6 +879,61 @@
                                                      Converter={StaticResource BoolVisibleConverter}}">
                             <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource QuoteTweet}" />
                             <Button.ToolTip>QT</Button.ToolTip>
+                        </Button>
+                        <Button VerticalAlignment="Center"
+                                Command="{Binding RetweetImmediatelyCommand}"
+                                CommandParameter="バルス！"
+                                Focusable="False"
+                                Style="{DynamicResource FlatButtonStyle}">
+                            <TextBlock Text="バ" />
+                            <Button.ToolTip>バルス！</Button.ToolTip>
+                        </Button>
+                        <Button VerticalAlignment="Center"
+                                Command="{Binding RetweetImmediatelyCommand}"
+                                CommandParameter="40秒で支度しな"
+                                Focusable="False"
+                                Style="{DynamicResource FlatButtonStyle}">
+                            <TextBlock Text="40" />
+                            <Button.ToolTip>40秒で支度しな</Button.ToolTip>
+                        </Button>
+                        <Button VerticalAlignment="Center"
+                                Command="{Binding RetweetImmediatelyCommand}"
+                                CommandParameter="三分間待ってやる！"
+                                Focusable="False"
+                                Style="{DynamicResource FlatButtonStyle}">
+                            <TextBlock Text="待" />
+                            <Button.ToolTip>三分間待ってやる！</Button.ToolTip>
+                        </Button>
+                        <Button VerticalAlignment="Center"
+                                Command="{Binding RetweetImmediatelyCommand}"
+                                CommandParameter="キミのアホ面には心底ウンザリさせられる"
+                                Focusable="False"
+                                Style="{DynamicResource FlatButtonStyle}">
+                            <TextBlock Text="面" />
+                            <Button.ToolTip>キミのアホ面には心底ウンザリさせられる</Button.ToolTip>
+                        </Button>
+                        <Button VerticalAlignment="Center"
+                                Command="{Binding RetweetImmediatelyCommand}"
+                                CommandParameter="見ろ!!{0}がゴミのようだ!!"
+                                Focusable="False"
+                                Style="{DynamicResource FlatButtonStyle}">
+                            <TextBlock Text="塵" />
+                            <Button.ToolTip>見ろ！[ユーザー]がゴミのようだ！</Button.ToolTip>
+                        </Button>
+                        <Button VerticalAlignment="Center"
+                                Command="{Binding RetweetImmediatelyCommand}"
+                                CommandParameter="目が、目がぁ～！"
+                                Focusable="False"
+                                Style="{DynamicResource FlatButtonStyle}">
+                            <TextBlock Text="目" />
+                            <Button.ToolTip>目が、目がぁ～！</Button.ToolTip>
+                        </Button>
+                        <Button VerticalAlignment="Center"
+                                Command="{Binding MentionCommand}"
+                                Focusable="False"
+                                Style="{DynamicResource FlatButtonStyle}">
+                            <Image RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{StaticResource Comment}" />
+                            <Button.ToolTip>返信</Button.ToolTip>
                         </Button>
                         <Button VerticalAlignment="Center"
                                 Command="{Binding MentionCommand}"

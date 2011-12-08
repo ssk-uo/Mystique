@@ -806,7 +806,6 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         }
         #endregion
 
-
         public void ToggleFavorite()
         {
             if (!this.Tweet.CanFavorite) return;
@@ -1227,6 +1226,29 @@ namespace Inscribe.ViewModels.PartBlocks.MainBlock.TimelineChild
         }
 
         #endregion
+
+
+        #region RetweetImmediatelyCommand
+        private ListenerCommand<string> _RetweetImmediatelyCommand;
+
+        public ListenerCommand<string> RetweetImmediatelyCommand
+        {
+            get
+            {
+                if (_RetweetImmediatelyCommand == null)
+                {
+                    _RetweetImmediatelyCommand = new ListenerCommand<string>(RetweetImmediately);
+                }
+                return _RetweetImmediatelyCommand;
+            }
+        }
+
+        public void RetweetImmediately(string parameter)
+        {
+            MouseAssignCore.ExecuteAction(this.Tweet, UnofficialRetweetQuoteMouseActionCandidates.CustomUnofficialRetweetImmediately, parameter + " RT {0}: {1}");
+        }
+        #endregion
+
 
         #endregion
 

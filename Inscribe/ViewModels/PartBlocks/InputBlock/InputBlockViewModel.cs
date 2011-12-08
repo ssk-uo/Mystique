@@ -33,6 +33,8 @@ namespace Inscribe.ViewModels.PartBlocks.InputBlock
 {
     public class InputBlockViewModel : ViewModel
     {
+        private int globalBikkuriCount = 0;
+
         public MainWindowViewModel Parent { get; private set; }
         public InputBlockViewModel(MainWindowViewModel parent)
         {
@@ -1148,7 +1150,37 @@ namespace Inscribe.ViewModels.PartBlocks.InputBlock
         }
 
         #endregion
-      
+
+        #region BarusuCommand
+        private ViewModelCommand _BarusuCommand;
+
+        public ViewModelCommand BarusuCommand
+        {
+            get
+            {
+                if (_BarusuCommand == null)
+                {
+                    _BarusuCommand = new ViewModelCommand(Barusu);
+                }
+                return _BarusuCommand;
+            }
+        }
+
+        public void Barusu()
+        {
+            var targets = this.overrideTargets;
+            if (targets == null)
+                targets = this.UserSelectorViewModel.LinkElements;
+            var decidedTargets = targets.ToArray();
+            if (Setting.Instance.InputExperienceProperty.UseActiveFallback && !IsDirectMessage)
+                decidedTargets = targets.Select(a => FallbackAccount(a, a)).Distinct().ToArray();
+            globalBikkuriCount = (globalBikkuriCount % 100) + 1;
+            decidedTargets.ForEach(i => this.AddUpdateWorker(
+                new TweetWorker(this, i, "バルス" + Enumerable.Range(0, globalBikkuriCount).Select(_ => "！").JoinString(""),
+                    0, string.Empty, new string[0])));
+        }
+        #endregion
+
         #endregion
 
         #region Posing control
@@ -1182,7 +1214,6 @@ namespace Inscribe.ViewModels.PartBlocks.InputBlock
                 }
             });
         }
-
 
         ObservableCollection<TweetWorker> _updateWorkers = new ObservableCollection<TweetWorker>();
         public ObservableCollection<TweetWorker> UpdateWorkers

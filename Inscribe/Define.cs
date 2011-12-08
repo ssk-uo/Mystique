@@ -48,7 +48,7 @@ namespace Inscribe
             return Double.Parse(lvstr);
         }
 
-        public static readonly string ApplicationName = "Krile";
+        public static readonly string ApplicationName = "Krilaputa";
 
         public static readonly string SettingFileName = "krile.xml";
 

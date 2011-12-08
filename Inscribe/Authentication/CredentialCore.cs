@@ -17,7 +17,8 @@ namespace Inscribe.Authentication
                 if (this.OverridedConsumerKey != null)
                     return this.OverridedConsumerKey;
                 else
-                    return "K3FZBXVOzsm271KC1jPPHA";
+                    // return "K3FZBXVOzsm271KC1jPPHA";
+                    return "hTBypUu4O2TSmp6VXaYjlw";
             }
         }
 
@@ -29,7 +30,8 @@ namespace Inscribe.Authentication
                 if (this.OverridedConsumerSecret != null)
                     return this.OverridedConsumerSecret;
                 else
-                    return "tOJVCdRrlzc08WilwcU5BtwuGzgbo2MlTWJIFRYaeow";
+                    // return "tOJVCdRrlzc08WilwcU5BtwuGzgbo2MlTWJIFRYaeow";
+                    return "NtnMKL2AaTUEKdmGzHOhpHL4y355kB7Mxg9lG5jIU";
             }
         }
 

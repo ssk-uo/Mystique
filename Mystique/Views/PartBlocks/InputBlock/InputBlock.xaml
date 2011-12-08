@@ -475,6 +475,7 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Grid.Background>
                             <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
@@ -648,6 +649,13 @@
                             </ItemsControl>
                         </StackPanel>
                         <Button Grid.Column="4"
+                                Command="{Binding BarusuCommand}"
+                                Focusable="False"
+                                Style="{StaticResource FlatButtonStyle}">
+                            <TextBlock Margin="16,0"
+                                       Text="バルス" />
+                        </Button>
+                        <Button Grid.Column="5"
                                 Command="{Binding UpdateCommand}"
                                 Focusable="False"
                                 Style="{StaticResource FlatButtonStyle}">
